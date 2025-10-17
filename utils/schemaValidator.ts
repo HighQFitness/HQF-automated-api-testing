@@ -1,31 +1,41 @@
-// utils/schemaValidator.ts
-import { expect } from '@playwright/test';
-import { WorkoutUnitsResponse } from './types';
+import { expect } from "@playwright/test";
+import { WorkoutUnitsResponse } from "./types";
 
-export function validateWorkoutUnitsResponse(body: unknown): asserts body is WorkoutUnitsResponse {
-  expect(typeof body).toBe('object');
-  expect(body).toHaveProperty('statusCode', 200);
-  expect(body).toHaveProperty('message');
-  expect(body).toHaveProperty('data.workout_units');
+export function validateWorkoutUnitsResponse(
+  body: unknown
+): asserts body is WorkoutUnitsResponse {
+  expect(typeof body).toBe("object");
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
 
-  const workoutUnits = (body as WorkoutUnitsResponse).data.workout_units;
+  const topLevelData = (body as any).data;
+
+  const data =
+    typeof topLevelData.workout_units === "object"
+      ? topLevelData.workout_units
+      : topLevelData;
+
+  expect(typeof data).toBe("object");
 
   const requiredFields = [
-    'id',
-    'barsAndPlatesLoad',
-    'kettlebellsLoad',
-    'runBikeShort',
-    'runBikeLong',
-    'assaultEchoBikeShort',
-    'assaultEchoBikeLong',
-    'rowSkiErgShort',
-    'rowSkiErgLong',
-    'boxJumpsHeightLength',
-    'createdAt',
+    "id",
+    "barsAndPlatesLoad",
+    "kettlebellsLoad",
+    "runBikeShort",
+    "runBikeLong",
+    "assaultEchoBikeShort",
+    "assaultEchoBikeLong",
+    "rowSkiErgShort",
+    "rowSkiErgLong",
+    "boxJumpsHeightLength",
+    "createdAt",
   ];
 
   for (const field of requiredFields) {
-    expect(workoutUnits).toHaveProperty(field);
-    expect(typeof (workoutUnits as Record<string, unknown>)[field]).toBe('string');
+    expect(data).toHaveProperty(field);
+    expect(typeof (data as Record<string, unknown>)[field]).toBe("string");
   }
 }
