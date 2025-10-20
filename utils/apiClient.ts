@@ -1,35 +1,30 @@
 import { APIRequestContext, request, APIResponse } from "@playwright/test";
 import dotenv from "dotenv";
-import path from "path";
 import * as fs from "fs";
+import FormData from "form-data";
 
 dotenv.config();
 
-interface AuthResponse {
+interface RefreshResponse {
   statusCode: number;
   message: string;
-  timestamp: string;
-  path: string;
   data: {
     accessToken: string;
-    refreshToken: string;
-    idToken: string;
-    expiresIn: number;
-    email: string;
-    userId: string;
+    refreshToken?: string;
   };
 }
 
 export class ApiClient {
   private apiContext!: APIRequestContext;
   private token: string | null = null;
+  private refreshToken: string | null = null;
   private baseURL: string;
-  private signinURL: string;
+  private refreshURL: string;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.signinURL =
-      process.env.API_SIGNIN_URL || "/account_service_v2/api/v1/auth/signin";
+    this.refreshURL =
+      process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
   }
 
   async init(): Promise<void> {
@@ -39,108 +34,108 @@ export class ApiClient {
         Accept: "application/json",
       },
     });
+
+    this.token = process.env.API_ACCESS_TOKEN || null;
+    this.refreshToken = process.env.API_REFRESH_TOKEN || null;
   }
 
-  async authenticate(email: string, password: string): Promise<void> {
-    const response: APIResponse = await this.apiContext.post(this.signinURL, {
-      data: { email, password },
-    });
-
-    const textBody = await response.text();
-
-    if (!response.ok()) {
-      throw new Error(
-        `Auth failed: ${response.status()} ${response.statusText()}`
-      );
-    }
-
-    const body: AuthResponse = JSON.parse(textBody);
-
-    this.token = body.data.accessToken;
-    if (!this.token)
-      throw new Error("Auth failed: no access token found in response");
+  setToken(token: string): void {
+    this.token = token;
   }
-  
+
   private getHeaders(contentType = "application/json"): Record<string, string> {
     if (!this.token) throw new Error("Token is not set");
-
     return {
       Authorization: `Bearer ${this.token}`,
       ...(contentType ? { "Content-Type": contentType } : {}),
     };
   }
 
-  async get(endpoint: string): Promise<APIResponse> {
-    if (!this.token) {
-      throw new Error("Token is not set.");
+  // --- CORE METHOD WRAPPER ---
+  private async handleAuth<T>(
+    method: "get" | "post" | "patch",
+    endpoint: string,
+    options: any = {}
+  ): Promise<APIResponse> {
+    let response: APIResponse;
+
+    try {
+      response = await (this.apiContext as any)[method](endpoint, {
+        ...options,
+        headers: {
+          ...this.getHeaders(options.contentType),
+          ...(options.headers || {}),
+        },
+      });
+    } catch (err) {
+      throw new Error(`Request failed: ${err}`);
     }
 
-    return this.apiContext.get(endpoint, {
-      headers: { Authorization: `Bearer ${this.token}` },
+    if (response.status() === 401 && this.refreshToken) {
+      console.warn("🔁 Token expired, refreshing...");
+      await this.refreshAccessToken();
+
+      // Retry once with new token
+      response = await (this.apiContext as any)[method](endpoint, {
+        ...options,
+        headers: {
+          ...this.getHeaders(options.contentType),
+          ...(options.headers || {}),
+        },
+      });
+    }
+
+    return response;
+  }
+
+  async refreshAccessToken(): Promise<void> {
+    if (!this.refreshToken) throw new Error("No refresh token available");
+
+    const response = await this.apiContext.post(this.refreshURL, {
+      data: { refreshToken: this.refreshToken },
+      headers: { "Content-Type": "application/json" },
     });
+
+    if (!response.ok()) {
+      throw new Error(`Refresh token failed: ${response.status()}`);
+    }
+
+    const body: RefreshResponse = await response.json();
+    this.token = body.data.accessToken;
+
+    if (body.data.refreshToken) {
+      this.refreshToken = body.data.refreshToken;
+    }
+
+    console.log("✅ Access token refreshed successfully");
+  }
+
+  async get(endpoint: string): Promise<APIResponse> {
+    return this.handleAuth("get", endpoint);
+  }
+
+  async post(endpoint: string, body?: object): Promise<APIResponse> {
+    return this.handleAuth("post", endpoint, { data: body });
+  }
+
+  async patch(endpoint: string, body: unknown): Promise<APIResponse> {
+    return this.handleAuth("patch", endpoint, { data: body });
+  }
+
+  async postMultipart(
+    endpoint: string,
+    { fieldName, filePath }: { fieldName: string; filePath: string }
+  ): Promise<APIResponse> {
+    if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
+
+    const form = new FormData();
+    form.append(fieldName, fs.createReadStream(filePath));
+
+    const headers = { Authorization: `Bearer ${this.token}` };
+    return this.handleAuth("post", endpoint, { headers, multipart: form });
   }
 
   async dispose(): Promise<void> {
     await this.apiContext.dispose();
   }
-
-  async patch<T>(endpoint: string, body: unknown): Promise<APIResponse> {
-    if (!this.token) {
-      throw new Error("Token is not set. Please authenticate first.");
-    }
-
-    const response = await this.apiContext.patch(endpoint, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-      },
-      data: body,
-    });
-
-    return response;
-  }
-
-  async post(endpoint: string, body?: object): Promise<Response> {
-    return fetch(`${this.baseURL}${endpoint}`, {
-      method: "POST",
-      headers: this.getHeaders(),
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  }
-
-async postMultipart(
-  endpoint: string,
-  { fieldName, filePath }: { fieldName: string; filePath: string }
-): Promise<APIResponse> {
-  if (!this.token) throw new Error("Token is not set");
-  if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
-
-  const fileBuffer = fs.readFileSync(filePath);
-  const fileName = path.basename(filePath);
-
-  const response = await this.apiContext.post(endpoint, {
-    headers: {
-      Authorization: `Bearer ${this.token}`,
-    },
-    multipart: {
-      [fieldName]: {
-        name: fileName,
-        mimeType: "image/jpeg",
-        buffer: fileBuffer,
-      },
-    },
-  });
-
-  if (!response.ok()) {
-    console.error(
-      `Upload failed: ${response.status()} ${response.statusText()}`
-    );
-    console.log(await response.text());
-  } else {
-    console.log("Photo uploaded successfully!");
-  }
-
-  return response;
-}
-
 }

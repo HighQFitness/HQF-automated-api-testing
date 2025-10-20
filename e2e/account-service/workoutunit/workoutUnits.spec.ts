@@ -16,10 +16,10 @@ test.describe("Account Service - GET Workout Units", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
-    apiClient = new ApiClient(baseURL);
-    await apiClient.init();
-    await apiClient.authenticate(email, password);
-  });
+  apiClient = new ApiClient(baseURL);
+  await apiClient.init();
+});
+
 
   test.afterAll(async () => {
     await apiClient.dispose();
@@ -42,7 +42,6 @@ test.describe("Account Service - GET Workout Units", () => {
     const response = await apiClient.get(workoutUnitsEndpoint);
     expect(response.status(), "Expected 401 for invalid token").toBe(401);
 
-    await apiClient.authenticate(email, password);
   });
 
   test("GET /workout-units - Should throw an error when no token is provided", async () => {
@@ -52,7 +51,6 @@ test.describe("Account Service - GET Workout Units", () => {
       await apiClient.get(workoutUnitsEndpoint);
     }).rejects.toThrow("Token is not set");
 
-    await apiClient.authenticate(email, password);
   });
 });
 
@@ -60,10 +58,10 @@ test.describe("Account Service - POST Workout Units", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
-    apiClient = new ApiClient(baseURL);
-    await apiClient.init();
-    await apiClient.authenticate(email, password);
-  });
+  apiClient = new ApiClient(baseURL);
+  await apiClient.init();
+});
+
 
   test.afterAll(async () => {
     await apiClient.dispose();

@@ -17,10 +17,9 @@ test.describe("Account Service - GET Account Info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
-    apiClient = new ApiClient(baseURL);
-    await apiClient.init();
-    await apiClient.authenticate(email, password);
-  });
+  apiClient = new ApiClient(baseURL);
+  await apiClient.init();
+});
 
   test.afterAll(async () => {
     await apiClient.dispose();
@@ -44,7 +43,6 @@ test.describe("Account Service - GET Account Info", () => {
     const response = await apiClient.get(accountEndpoint);
     expect(response.status(), "Expected 401 for invalid token").toBe(401);
 
-    await apiClient.authenticate(email, password);
   });
 
   test("GET /account - Should throw an error when no token is provided", async () => {
@@ -54,7 +52,6 @@ test.describe("Account Service - GET Account Info", () => {
       await apiClient.get(accountEndpoint);
     }).rejects.toThrow("Token is not set");
 
-    await apiClient.authenticate(email, password);
   });
 });
 
@@ -63,10 +60,10 @@ test.describe("Account service - Change account user photo", () => {
     let apiClient: ApiClient;
 
     test.beforeAll(async () => {
-        apiClient = new ApiClient(baseURL);
-        await apiClient.init();
-        await apiClient.authenticate(email, password);
-    });
+  apiClient = new ApiClient(baseURL);
+  await apiClient.init();
+});
+
 
     test.afterAll(async () => {
         await apiClient.dispose();
