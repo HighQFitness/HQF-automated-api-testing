@@ -37,12 +37,13 @@ test.describe("Account Service - GET Workout Units", () => {
   });
 
   test("GET /workout-units - Should return 401 Unauthorized with an invalid token", async () => {
-    (apiClient as any).token = "invalid-token-12345";
+  (apiClient as any).token = "invalid-token-12345";
 
-    const response = await apiClient.get(workoutUnitsEndpoint);
-    expect(response.status(), "Expected 401 for invalid token").toBe(401);
+  const response = await apiClient.get(workoutUnitsEndpoint, false);
+  expect(response.status(), "Expected 401 for invalid token").toBe(401);
+});
 
-  });
+
 
   test("GET /workout-units - Should throw an error when no token is provided", async () => {
     (apiClient as any).token = null;

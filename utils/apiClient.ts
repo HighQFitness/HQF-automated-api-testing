@@ -1,7 +1,6 @@
 import { APIRequestContext, request, APIResponse } from "@playwright/test";
 import dotenv from "dotenv";
 import * as fs from "fs";
-import FormData from "form-data";
 
 dotenv.config();
 
@@ -49,50 +48,44 @@ export class ApiClient {
   }
 
   private async handleAuth(
-    method: "get" | "post" | "patch",
-    endpoint: string,
-    options: any = {},
-    allowRefresh = true
-  ): Promise<APIResponse> {
-    let response: APIResponse;
+  method: "get" | "post" | "patch",
+  endpoint: string,
+  options: any = {},
+  allowRefresh = true
+): Promise<APIResponse> {
+  let response: APIResponse;
 
+  try {
+    response = await (this.apiContext as any)[method](endpoint, {
+      ...options,
+      headers: {
+        ...this.getHeaders(options.contentType),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (err) {
+    throw new Error(`Request failed: ${err}`);
+  }
+
+  if (!allowRefresh) {
+    return response;
+  }
+
+  if (response.status() === 401 && this.refreshToken) {
+    console.warn("🔁 Token expired, attempting refresh...");
     try {
-      response = await (this.apiContext as any)[method](endpoint, {
-        ...options,
-        headers: {
-          ...this.getHeaders(options.contentType),
-          ...(options.headers || {}),
-        },
-      });
+      await this.refreshAccessToken();
     } catch (err) {
-      throw new Error(`Request failed: ${err}`);
-    }
-
-    if (
-      response.status() === 401 &&
-      allowRefresh &&
-      this.refreshToken &&
-      !endpoint.includes("/account/photo")
-    ) {
-      console.warn("Token expired");
-
-      try {
-        await this.refreshAccessToken();
-      } catch (err) {
-        console.error("Token refresh failed:", err);
-        throw new Error(`Refresh token failed: ${err}`);
-      }
-
-      return this.handleAuth(method, endpoint, options, false);
-    }
-
-    if (response.status() === 401 && !allowRefresh) {
-      console.warn("⚠️ 401 Unauthorized (refresh disabled)");
+      console.error("Token refresh failed:", err);
       return response;
     }
 
-    return response;
+    return this.handleAuth(method, endpoint, options, false);
   }
+
+  return response;
+}
+
 
   async refreshAccessToken(): Promise<void> {
     if (!this.refreshToken) throw new Error("No refresh token available");
