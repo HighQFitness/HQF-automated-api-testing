@@ -8,18 +8,15 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const baseURL = process.env.API_BASE_URL!;
-const email = process.env.API_EMAIL!;
-const password = process.env.API_PASSWORD!;
 const workoutUnitsEndpoint = process.env.API_WORKOUTUNITS_URL!;
 
 test.describe("Account Service - GET Workout Units", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
-  apiClient = new ApiClient(baseURL);
-  await apiClient.init();
-});
-
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
 
   test.afterAll(async () => {
     await apiClient.dispose();
@@ -37,13 +34,11 @@ test.describe("Account Service - GET Workout Units", () => {
   });
 
   test("GET /workout-units - Should return 401 Unauthorized with an invalid token", async () => {
-  (apiClient as any).token = "invalid-token-12345";
+    (apiClient as any).token = "invalid-token-12345";
 
-  const response = await apiClient.get(workoutUnitsEndpoint, false);
-  expect(response.status(), "Expected 401 for invalid token").toBe(401);
-});
-
-
+    const response = await apiClient.get(workoutUnitsEndpoint, false);
+    expect(response.status(), "Expected 401 for invalid token").toBe(401);
+  });
 
   test("GET /workout-units - Should throw an error when no token is provided", async () => {
     (apiClient as any).token = null;
@@ -51,7 +46,6 @@ test.describe("Account Service - GET Workout Units", () => {
     await expect(async () => {
       await apiClient.get(workoutUnitsEndpoint);
     }).rejects.toThrow("Token is not set");
-
   });
 });
 
@@ -59,10 +53,9 @@ test.describe("Account Service - POST Workout Units", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
-  apiClient = new ApiClient(baseURL);
-  await apiClient.init();
-});
-
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
 
   test.afterAll(async () => {
     await apiClient.dispose();
@@ -75,7 +68,7 @@ test.describe("Account Service - POST Workout Units", () => {
     expect(response.status(), "Expected 200 Created").toBe(200);
 
     const responseBody: WorkoutUnitsResponse = await response.json();
-  
+
     validateWorkoutUnitsResponse(responseBody);
   });
 

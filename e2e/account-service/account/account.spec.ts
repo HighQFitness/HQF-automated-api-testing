@@ -17,9 +17,9 @@ test.describe("Account Service - GET Account Info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
-  apiClient = new ApiClient(baseURL);
-  await apiClient.init();
-});
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
 
   test.afterAll(async () => {
     await apiClient.dispose();
@@ -38,45 +38,46 @@ test.describe("Account Service - GET Account Info", () => {
   });
 
   test("GET /account - Should return 401 Unauthorized with invalid token", async () => {
-  (apiClient as any).token = "invalid-token-12345";
-  const response = await apiClient.get(accountEndpoint, false);
-  expect(response.status()).toBe(401);
-});
+    (apiClient as any).token = "invalid-token-12345";
+    const response = await apiClient.get(accountEndpoint, false);
+    expect(response.status()).toBe(401);
+  });
 
-test("GET /account - Should throw when no token is provided", async () => {
-  (apiClient as any).token = null;
-  await expect(apiClient.get(accountEndpoint, false)).rejects.toThrow("Token is not set");
+  test("GET /account - Should throw when no token is provided", async () => {
+    (apiClient as any).token = null;
+    await expect(apiClient.get(accountEndpoint, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
 });
-
-});
-
 
 test.describe("Account service - Change account user photo", () => {
-    let apiClient: ApiClient;
+  let apiClient: ApiClient;
 
-    test.beforeAll(async () => {
-  apiClient = new ApiClient(baseURL);
-  await apiClient.init();
-});
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
 
+  test.afterAll(async () => {
+    await apiClient.dispose();
+  });
 
-    test.afterAll(async () => {
-        await apiClient.dispose();
+  test("POST /account/photo - Should change photo correctly", async () => {
+    const filePath = path.resolve(
+      __dirname,
+      "../../../assets/highQFitnessCopy.jpg"
+    );
+    const response = await apiClient.postMultipart(accountPhotoEndpoint, {
+      fieldName: "photo",
+      filePath,
     });
 
-    test("POST /account/photo - Should change photo correctly", async () => {
+    expect(response.status(), "Expected 201 for successful photo upload").toBe(
+      201
+    );
 
-    const filePath = path.resolve(__dirname, "../../../assets/highQFitnessCopy.jpg");
-    const response = await apiClient.postMultipart(accountPhotoEndpoint, {
-    fieldName: "photo",
-    filePath,
-});
-
-
-  expect(response.status(), "Expected 201 for successful photo upload").toBe(201);
-
-  const json = await response.json();
-  console.log("Response JSON:", json);
-});
-
+    const json = await response.json();
+    console.log("Response JSON:", json);
+  });
 });
