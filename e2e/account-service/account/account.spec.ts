@@ -38,21 +38,16 @@ test.describe("Account Service - GET Account Info", () => {
   });
 
   test("GET /account - Should return 401 Unauthorized with invalid token", async () => {
-    (apiClient as any).token = "invalid-token-12345";
+  (apiClient as any).token = "invalid-token-12345";
+  const response = await apiClient.get(accountEndpoint, false);
+  expect(response.status()).toBe(401);
+});
 
-    const response = await apiClient.get(accountEndpoint);
-    expect(response.status(), "Expected 401 for invalid token").toBe(401);
+test("GET /account - Should throw when no token is provided", async () => {
+  (apiClient as any).token = null;
+  await expect(apiClient.get(accountEndpoint, false)).rejects.toThrow("Token is not set");
+});
 
-  });
-
-  test("GET /account - Should throw an error when no token is provided", async () => {
-    (apiClient as any).token = null;
-
-    await expect(async () => {
-      await apiClient.get(accountEndpoint);
-    }).rejects.toThrow("Token is not set");
-
-  });
 });
 
 

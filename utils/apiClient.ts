@@ -23,16 +23,13 @@ export class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.refreshURL =
-      process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
+    this.refreshURL = process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
   }
 
   async init(): Promise<void> {
     this.apiContext = await request.newContext({
       baseURL: this.baseURL,
-      extraHTTPHeaders: {
-        Accept: "application/json",
-      },
+      extraHTTPHeaders: { Accept: "application/json" },
     });
 
     this.token = process.env.API_ACCESS_TOKEN || null;
@@ -51,11 +48,11 @@ export class ApiClient {
     };
   }
 
-  // --- CORE METHOD WRAPPER ---
-  private async handleAuth<T>(
+  private async handleAuth(
     method: "get" | "post" | "patch",
     endpoint: string,
-    options: any = {}
+    options: any = {},
+    allowRefresh = true
   ): Promise<APIResponse> {
     let response: APIResponse;
 
@@ -71,18 +68,27 @@ export class ApiClient {
       throw new Error(`Request failed: ${err}`);
     }
 
-    if (response.status() === 401 && this.refreshToken) {
-      console.warn("🔁 Token expired, refreshing...");
-      await this.refreshAccessToken();
+    if (
+      response.status() === 401 &&
+      allowRefresh &&
+      this.refreshToken &&
+      !endpoint.includes("/account/photo")
+    ) {
+      console.warn("Token expired");
 
-      // Retry once with new token
-      response = await (this.apiContext as any)[method](endpoint, {
-        ...options,
-        headers: {
-          ...this.getHeaders(options.contentType),
-          ...(options.headers || {}),
-        },
-      });
+      try {
+        await this.refreshAccessToken();
+      } catch (err) {
+        console.error("Token refresh failed:", err);
+        throw new Error(`Refresh token failed: ${err}`);
+      }
+
+      return this.handleAuth(method, endpoint, options, false);
+    }
+
+    if (response.status() === 401 && !allowRefresh) {
+      console.warn("⚠️ 401 Unauthorized (refresh disabled)");
+      return response;
     }
 
     return response;
@@ -91,48 +97,82 @@ export class ApiClient {
   async refreshAccessToken(): Promise<void> {
     if (!this.refreshToken) throw new Error("No refresh token available");
 
+    const cleanToken = this.refreshToken.replace(/^Bearer\s+/, "");
+
     const response = await this.apiContext.post(this.refreshURL, {
-      data: { refreshToken: this.refreshToken },
+      data: { refreshToken: cleanToken },
       headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok()) {
-      throw new Error(`Refresh token failed: ${response.status()}`);
+      const text = await response.text();
+      throw new Error(`Refresh token failed: ${response.status()} - ${text}`);
     }
 
     const body: RefreshResponse = await response.json();
     this.token = body.data.accessToken;
+    if (body.data.refreshToken) this.refreshToken = body.data.refreshToken;
 
-    if (body.data.refreshToken) {
-      this.refreshToken = body.data.refreshToken;
-    }
-
-    console.log("✅ Access token refreshed successfully");
+    console.log("Access token refreshed successfully");
   }
 
-  async get(endpoint: string): Promise<APIResponse> {
-    return this.handleAuth("get", endpoint);
+  async get(endpoint: string, allowRefresh = true): Promise<APIResponse> {
+    return this.handleAuth("get", endpoint, {}, allowRefresh);
   }
 
-  async post(endpoint: string, body?: object): Promise<APIResponse> {
-    return this.handleAuth("post", endpoint, { data: body });
+  async post(
+    endpoint: string,
+    body?: object,
+    allowRefresh = true
+  ): Promise<APIResponse> {
+    return this.handleAuth("post", endpoint, { data: body }, allowRefresh);
   }
 
-  async patch(endpoint: string, body: unknown): Promise<APIResponse> {
-    return this.handleAuth("patch", endpoint, { data: body });
+  async patch(
+    endpoint: string,
+    body: unknown,
+    allowRefresh = true
+  ): Promise<APIResponse> {
+    return this.handleAuth("patch", endpoint, { data: body }, allowRefresh);
   }
 
   async postMultipart(
     endpoint: string,
-    { fieldName, filePath }: { fieldName: string; filePath: string }
+    { fieldName, filePath }: { fieldName: string; filePath: string },
+    allowRefresh = true
   ): Promise<APIResponse> {
-    if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
+    if (!this.token) throw new Error("Token is not set");
+    if (!fs.existsSync(filePath))
+      throw new Error(`File not found: ${filePath}`);
 
-    const form = new FormData();
-    form.append(fieldName, fs.createReadStream(filePath));
+    const fileBuffer = fs.readFileSync(filePath);
+    const fileName = filePath.split("/").pop() || "upload.jpg";
 
-    const headers = { Authorization: `Bearer ${this.token}` };
-    return this.handleAuth("post", endpoint, { headers, multipart: form });
+    let response: APIResponse;
+
+    try {
+      response = await this.apiContext.post(endpoint, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        multipart: {
+          [fieldName]: {
+            name: fileName,
+            mimeType: "image/jpeg",
+            buffer: fileBuffer,
+          },
+        },
+      });
+    } catch (err) {
+      throw new Error(`Multipart request failed: ${err}`);
+    }
+
+    if (response.status() === 401 && allowRefresh && this.refreshToken) {
+      console.warn("Skipping token refresh for multipart uploads.");
+      return response;
+    }
+
+    return response;
   }
 
   async dispose(): Promise<void> {
