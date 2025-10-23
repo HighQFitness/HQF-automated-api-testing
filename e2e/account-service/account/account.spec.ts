@@ -13,6 +13,8 @@ const email = process.env.API_EMAIL!;
 const accountEndpoint = process.env.API_ACCOUNT_URL!;
 const accountPhotoEndpoint = process.env.API_PHOTO_URL!;
 const phoneChangeEndpoint = process.env.API_PHONE_CHANGE_URL!;
+const resendCodeEndpoint = process.env.API_RESEND_URL!;
+
 
 test.describe("Account Service - GET Account Info", () => {
   let apiClient: ApiClient;
@@ -91,9 +93,17 @@ test.describe("Account service - Change and verify account phone number", () => 
     await apiClient.init();
   });
 
-  // test("PATCH /account/phone/verify - Should verify phone correctly", async () => {
+  test("PATCH /account/phone/verify - Should re send verification code correctly", async () => {
+    const response = await apiClient.patch(resendCodeEndpoint, {}, true);
+    expect(response.status(), "Expected 200 for successful code resend").toBe(
+      200
+    );
+    const body = await response.json();
 
-  // });
+    expect(body.message).toBe(
+      `Verification code has been resent to your updated phone number`
+    );
+  });
 
   test("PATCH /account/phone - Should change phone correctly", async () => {
     const phoneToChange = WorkoutUnitsFactory.returnChangePhoneNumber();
