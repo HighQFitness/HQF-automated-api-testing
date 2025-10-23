@@ -4,14 +4,15 @@ import { validateAccountResponse } from "../../../utils/schemaValidator";
 import { AccountResponse } from "../../../utils/types";
 import dotenv from "dotenv";
 import path from "path";
+import { WorkoutUnitsFactory } from "../../../utils/dataFactory";
 
 dotenv.config();
 
 const baseURL = process.env.API_BASE_URL!;
 const email = process.env.API_EMAIL!;
-const password = process.env.API_PASSWORD!;
 const accountEndpoint = process.env.API_ACCOUNT_URL!;
 const accountPhotoEndpoint = process.env.API_PHOTO_URL!;
+const phoneChangeEndpoint = process.env.API_PHONE_CHANGE_URL!;
 
 test.describe("Account Service - GET Account Info", () => {
   let apiClient: ApiClient;
@@ -66,7 +67,7 @@ test.describe("Account service - Change account user photo", () => {
   test("POST /account/photo - Should change photo correctly", async () => {
     const filePath = path.resolve(
       __dirname,
-      "../../../assets/highQFitnessCopy.jpg"
+      "../../../assets/highQFitness.jpg"
     );
     const response = await apiClient.postMultipart(accountPhotoEndpoint, {
       fieldName: "photo",
@@ -79,5 +80,35 @@ test.describe("Account service - Change account user photo", () => {
 
     const json = await response.json();
     console.log("Response JSON:", json);
+  });
+});
+
+test.describe("Account service - Change and verify account phone number", () => {
+  let apiClient: ApiClient;
+
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
+
+  // test("PATCH /account/phone/verify - Should verify phone correctly", async () => {
+
+  // });
+
+  test("PATCH /account/phone - Should change phone correctly", async () => {
+    const phoneToChange = WorkoutUnitsFactory.returnChangePhoneNumber();
+
+    const response = await apiClient.patch(
+      phoneChangeEndpoint,
+      { phoneNumber: phoneToChange },
+      true
+    );
+    expect(response.status(), "Expected 200 for successful phone change").toBe(
+      200
+    );
+    const body = await response.json();
+    expect(body.message).toBe(
+      `Phone number updated to ${phoneToChange}. A verification code has been sent to this number. Please check your messages and enter the code to complete the verification.`
+    );
   });
 });

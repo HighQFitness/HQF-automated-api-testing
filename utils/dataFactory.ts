@@ -20,4 +20,12 @@ export class WorkoutUnitsFactory {
     delete (body as any).barsAndPlatesLoad;
     return body;
   }
+
+  static returnValidPhoneNumber(): string{
+    return '+5491156062207'
+  }
+
+  static returnChangePhoneNumber(): string{
+    return '+5491156062206'
+  }
 }
