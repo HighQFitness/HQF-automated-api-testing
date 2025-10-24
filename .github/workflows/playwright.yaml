@@ -1,4 +1,4 @@
-name: Playwright API Tests
+name: HQF API Tests
 
 on:
   repository_dispatch:
@@ -8,7 +8,7 @@ jobs:
   api-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout tests
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -23,12 +23,15 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.event.client_payload.branch }}
           PR_URL: ${{ github.event.client_payload.pr_url }}
+          SOURCE_REPO: ${{ github.event.client_payload.repo }}
         run: |
-          echo "Running tests against branch: $BRANCH_NAME"
+          echo "Running API tests for branch: $BRANCH_NAME"
           echo "Triggered by PR: $PR_URL"
+          echo "Source repository: $SOURCE_REPO"
+          # example: run tests with environment var for target API
           npx playwright test --project=api --reporter=github
 
-      - name: Upload Playwright report
+      - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
