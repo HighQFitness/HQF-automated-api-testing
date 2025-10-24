@@ -4,6 +4,9 @@ import * as fs from "fs";
 
 dotenv.config();
 
+interface ChangePhoneRequest {
+  phone: string;
+};
 interface RefreshResponse {
   statusCode: number;
   message: string;
