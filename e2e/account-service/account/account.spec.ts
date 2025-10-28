@@ -46,7 +46,7 @@ test.describe("Account Service - GET Account Data", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("GET /account - Should throw when no token is provided", async () => {
+  test("GET /account - Should throw error when no token is provided", async () => {
     (apiClient as any).token = null;
     await expect(apiClient.get(accountEndpoint, false)).rejects.toThrow(
       "Token is not set"

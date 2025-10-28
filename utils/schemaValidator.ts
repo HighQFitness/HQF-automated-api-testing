@@ -109,6 +109,16 @@ export interface AccountInfoResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
+
 
 export function validateAccountResponse(body: unknown): asserts body is AccountResponse {
   expect(typeof body).toBe("object");
@@ -144,4 +154,26 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(typeof data.address).toBe("object");
   expect(data.address).toHaveProperty("address1");
   expect(data.address).toHaveProperty("city");
+}
+
+export function validateUsernameResponse(body: unknown): asserts body is UsernameResponse {
+  // Basic structure check
+  expect(body).toHaveProperty("statusCode");
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
+
+  const data = (body as UsernameResponse).data;
+
+  // Validate fields in data
+  expect(data).toHaveProperty("username");
+  expect(typeof data.username).toBe("string");
+
+  // Validate general metadata types
+  const res = body as UsernameResponse;
+  expect(typeof res.statusCode).toBe("number");
+  expect(typeof res.message).toBe("string");
+  expect(typeof res.timestamp).toBe("string");
+  expect(typeof res.path).toBe("string");
 }

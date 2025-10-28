@@ -100,3 +100,12 @@ export interface AccountResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
