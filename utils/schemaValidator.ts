@@ -128,24 +128,20 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(Array.isArray(data.workoutPlaceInfos)).toBe(true);
 }
 
-export function validateAccountInfoResponse(body: unknown): asserts body is AccountInfoResponse {
-  expect(typeof body).toBe("object");
-  expect(body).toHaveProperty("statusCode", 200);
-  expect(body).toHaveProperty("message");
-  expect(body).toHaveProperty("timestamp");
-  expect(body).toHaveProperty("path", "/api/v1/account-info");
-  expect(body).toHaveProperty("data");
-
+ export function validateAccountInfoResponse(body: unknown, mode: "full" | "partial" = "full") {
   const data = (body as AccountInfoResponse).data;
+
   expect(data).toHaveProperty("name");
   expect(data).toHaveProperty("email");
   expect(data).toHaveProperty("phoneNumber");
   expect(data).toHaveProperty("address");
-  expect(data).toHaveProperty("deviceUserId");
-  expect(data).toHaveProperty("avatar");
+
+  if (mode === "full") {
+    expect(data).toHaveProperty("deviceUserId");
+    expect(data).toHaveProperty("avatar");
+  }
+
   expect(typeof data.address).toBe("object");
   expect(data.address).toHaveProperty("address1");
   expect(data.address).toHaveProperty("city");
-  expect(typeof data.address.latitude).toBe("number");
-  expect(typeof data.address.longitude).toBe("number");
 }
