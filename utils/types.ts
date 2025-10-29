@@ -109,3 +109,11 @@ export interface UsernameResponse {
     username: string;
   };
 }
+export interface DeleteAccountResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: Record<string, never>;
+}
+

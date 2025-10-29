@@ -173,4 +173,31 @@ export class ApiClient {
   async dispose(): Promise<void> {
     await this.apiContext.dispose();
   }
+  
+  async delete(endpoint: string, auth = true, params?: Record<string, string>) {
+  const url = new URL(
+    endpoint.startsWith("http") ? endpoint : `${this.baseUrl}${endpoint}`
+  );
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) =>
+      url.searchParams.append(key, value)
+    );
+  }
+
+  const headers = auth ? this.authHeaders() : {};
+  const response = await fetch(url.toString(), {
+    method: "DELETE",
+    headers,
+  });
+
+  if (!response.ok) {
+    console.error(
+      `DELETE request failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response;
+}
+
 }

@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { WorkoutUnitsResponse } from "./types";
+import { DeleteAccountResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -157,7 +158,6 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
 }
 
 export function validateUsernameResponse(body: unknown): asserts body is UsernameResponse {
-  // Basic structure check
   expect(body).toHaveProperty("statusCode");
   expect(body).toHaveProperty("message");
   expect(body).toHaveProperty("timestamp");
@@ -166,14 +166,31 @@ export function validateUsernameResponse(body: unknown): asserts body is Usernam
 
   const data = (body as UsernameResponse).data;
 
-  // Validate fields in data
   expect(data).toHaveProperty("username");
   expect(typeof data.username).toBe("string");
 
-  // Validate general metadata types
   const res = body as UsernameResponse;
   expect(typeof res.statusCode).toBe("number");
   expect(typeof res.message).toBe("string");
   expect(typeof res.timestamp).toBe("string");
   expect(typeof res.path).toBe("string");
+}
+
+export function validateDeleteAccountResponse(body: unknown): asserts body is DeleteAccountResponse {
+  // Ensure top-level structure exists
+  expect(body).toHaveProperty("statusCode");
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
+
+  const res = body as DeleteAccountResponse;
+
+  expect(typeof res.statusCode).toBe("number");
+  expect(typeof res.message).toBe("string");
+  expect(typeof res.timestamp).toBe("string");
+  expect(typeof res.path).toBe("string");
+
+  expect(typeof res.data).toBe("object");
+  expect(Object.keys(res.data).length).toBe(0);
 }
