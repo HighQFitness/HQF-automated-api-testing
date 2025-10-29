@@ -51,7 +51,7 @@ export class ApiClient {
   }
 
   private async handleAuth(
-    method: "get" | "post" | "patch",
+    method: "get" | "post" | "patch" | "delete",
     endpoint: string,
     options: any = {},
     allowRefresh = true
@@ -115,6 +115,10 @@ export class ApiClient {
     return this.handleAuth("get", endpoint, {}, allowRefresh);
   }
 
+  async delete(endpoint: string, allowRefresh = true): Promise<APIResponse> {
+    return this.handleAuth("delete", endpoint, {}, allowRefresh);
+  }
+
   async post(
     endpoint: string,
     body?: object,
@@ -173,4 +177,5 @@ export class ApiClient {
   async dispose(): Promise<void> {
     await this.apiContext.dispose();
   }
+  
 }

@@ -100,3 +100,20 @@ export interface AccountResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
+export interface DeleteAccountResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: Record<string, never>;
+}
+
