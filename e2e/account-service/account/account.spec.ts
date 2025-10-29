@@ -16,7 +16,7 @@ const phoneChangeEndpoint = process.env.API_PHONE_CHANGE_URL!;
 const resendCodeEndpoint = process.env.API_RESEND_URL!;
 
 
-test.describe("Account Service - GET Account Info", () => {
+test.describe("Account Service - GET Account Data", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
@@ -28,7 +28,7 @@ test.describe("Account Service - GET Account Info", () => {
     await apiClient.dispose();
   });
 
-  test("GET /account - Should return valid account information", async () => {
+  test("GET /account - Should return valid account data", async () => {
     const response = await apiClient.get(accountEndpoint);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 

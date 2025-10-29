@@ -86,6 +86,30 @@ export interface AccountResponse {
   };
 }
 
+export interface AccountInfoResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    name: string;
+    email: string;
+    phoneNumber: string;
+    address: {
+      address1: string;
+      address2: string;
+      zipCode: string;
+      googlePlaceId: string;
+      latitude: number;
+      longitude: number;
+      state: string;
+      city: string;
+    };
+    deviceUserId: string;
+    avatar: string;
+  };
+}
+
 export function validateAccountResponse(body: unknown): asserts body is AccountResponse {
   expect(typeof body).toBe("object");
   expect(body).toHaveProperty("statusCode", 200);
@@ -102,4 +126,22 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(Array.isArray(data.workoutUnitsInfos)).toBe(true);
   expect(Array.isArray(data.sportsInfos)).toBe(true);
   expect(Array.isArray(data.workoutPlaceInfos)).toBe(true);
+}
+
+ export function validateAccountInfoResponse(body: unknown, mode: "full" | "partial" = "full") {
+  const data = (body as AccountInfoResponse).data;
+
+  expect(data).toHaveProperty("name");
+  expect(data).toHaveProperty("email");
+  expect(data).toHaveProperty("phoneNumber");
+  expect(data).toHaveProperty("address");
+
+  if (mode === "full") {
+    expect(data).toHaveProperty("deviceUserId");
+    expect(data).toHaveProperty("avatar");
+  }
+
+  expect(typeof data.address).toBe("object");
+  expect(data.address).toHaveProperty("address1");
+  expect(data.address).toHaveProperty("city");
 }
