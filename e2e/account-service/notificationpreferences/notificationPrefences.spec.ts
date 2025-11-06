@@ -39,20 +39,20 @@ test.describe("Account Service - GET Notifications preferences", () => {
     }
   );
 });
-});
-  // test("GET /notification-preferences - Should return 401 Unauthorized with invalid token", async () => {
-  //   (apiClient as any).token = "invalid-token-12345";
-  //   const response = await apiClient.get(notificationPreferencesEndpoint, false);
-  //   expect(response.status()).toBe(401);
-  // });
 
-  // test("GET /notification-preferences - Should throw when no token is provided", async () => {
-  //   (apiClient as any).token = null;
-  //   await expect(apiClient.get(notificationPreferencesEndpoint, false)).rejects.toThrow(
-  //     "Token is not set"
-  //   );
-  // });
-//});
+  test("GET /notification-preferences - Should return 401 Unauthorized with invalid token", async () => {
+    (apiClient as any).token = "invalid-token-12345";
+    const response = await apiClient.get(notificationPreferencesEndpoint, false);
+    expect(response.status()).toBe(401);
+  });
+
+  test("GET /notification-preferences - Should throw when no token is provided", async () => {
+    (apiClient as any).token = null;
+    await expect(apiClient.get(notificationPreferencesEndpoint, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
+});
 
 // test.describe("Account Service - PATCH Health Information", () => {
 //   let apiClient: ApiClient;
