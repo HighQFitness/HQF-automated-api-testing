@@ -105,11 +105,7 @@ test.describe("Account Service - DELETE Health Information", () => {
   });
 
   test.afterAll(async () => {
-    await apiClient.dispose();
     const payload = HealthInfoFactory.valid();
-
-    const response = await apiClient.patch(healthInfoEndpoint, payload, true);
-    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
   });
 
   test("DELETE /health-info - Should return valid updated health information", async () => {

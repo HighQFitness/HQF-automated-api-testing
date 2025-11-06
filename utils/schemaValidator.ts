@@ -163,6 +163,7 @@ export function validateHealthInfoResponse(
 
   expect(typeof data.id).toBe("string");
   expect(typeof data.createdAt).toBe("string");
+  expect(typeof data.biologicalSex).toBe("object");
   expect(typeof data.height).toBe("object");
   expect(typeof data.weight).toBe("object");
 }

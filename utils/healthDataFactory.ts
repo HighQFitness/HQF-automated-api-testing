@@ -13,7 +13,8 @@ export class HealthInfoFactory {
         unit: "kg"
       },
         birth_day: "1988-05-18",
-        gender: "female"
+        gender: "female",
+        biological_sex: "female",
     };
   }
 }
