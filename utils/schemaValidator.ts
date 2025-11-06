@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { WorkoutUnitsResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -165,4 +165,27 @@ export function validateHealthInfoResponse(
   expect(typeof data.createdAt).toBe("string");
   expect(typeof data.height).toBe("object");
   expect(typeof data.weight).toBe("object");
+}
+
+export function validateNotificationPreferencesResponse(
+  body: unknown
+) {
+  const data = (body as NotificationPreferencesResponse).data;
+
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
+
+  expect(Array.isArray(data.preferences)).toBe(true);
+  expect(data.preferences.length).toBeGreaterThan(0);
+
+  for (const pref of data.preferences) {
+    expect(pref).toHaveProperty("notificationCategory");
+    expect(pref).toHaveProperty("notificationOption");
+
+    expect(typeof pref.notificationCategory).toBe("string");
+    expect(typeof pref.notificationOption).toBe("string");
+  }
 }

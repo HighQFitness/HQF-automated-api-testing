@@ -114,3 +114,16 @@ export interface HealthInfoResponse {
     gender: string;
   };
 }
+
+export interface NotificationPreferencesResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    preferences: Array<{
+      notificationCategory: string;
+      notificationOption: string;
+    }>;
+  };
+}
