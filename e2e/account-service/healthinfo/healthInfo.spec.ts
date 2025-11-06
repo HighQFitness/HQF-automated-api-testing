@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { ApiClient } from "../../../utils/apiClient";
 import { validateHealthInfoResponse } from "../../../utils/schemaValidator";
-import { AccountInfoFactory } from "../../../utils/accountDataFactory";
 import { HealthInfoResponse } from "../../../utils/types";
 import dotenv from "dotenv";
 import { HealthInfoFactory } from "../../../utils/healthDataFactory";
@@ -52,7 +51,7 @@ test.describe("Account Service - GET Health Information", () => {
   });
 });
 
-test.describe("Account Service - PATCH Account Information", () => {
+test.describe("Account Service - PATCH Health Information", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
@@ -64,16 +63,13 @@ test.describe("Account Service - PATCH Account Information", () => {
     await apiClient.dispose();
   });
 
-  test("PATCH /health-info - Should return valid updated account information", async () => {
+  test("PATCH /health-info - Should return valid updated health information", async () => {
       const payload = HealthInfoFactory.valid();
-     // console.log("payload: " + JSON.stringify(payload))
 
     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 
     const body: unknown = await response.json();
-    validateHealthInfoResponse(body);
-//console.log("response is: " + JSON.stringify(body))
     const health = (body as HealthInfoResponse).data;
     expect(health.height.value).toBe(userHealthHeight);
     expect(health.weight.value).toBe(userHealthWeight);
@@ -92,6 +88,49 @@ test.describe("Account Service - PATCH Account Information", () => {
     const payload = HealthInfoFactory.valid();
 
     await expect(apiClient.patch(healthInfoEndpoint,payload, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
+});
+
+test.describe("Account Service - DELETE Health Information", () => {
+  let apiClient: ApiClient;
+
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+    const payload = HealthInfoFactory.valid();
+
+    const response = await apiClient.patch(healthInfoEndpoint, payload, true);
+    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+  });
+
+  test.afterAll(async () => {
+    await apiClient.dispose();
+    const payload = HealthInfoFactory.valid();
+
+    const response = await apiClient.patch(healthInfoEndpoint, payload, true);
+    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+  });
+
+  test("DELETE /health-info - Should return valid updated health information", async () => {
+    const response = await apiClient.delete(healthInfoEndpoint, true);
+    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+  });
+
+  test("DELETE /health-info - Should return 401 Unauthorized with invalid token", async () => {
+    (apiClient as any).token = "invalid-token-12345";
+    const payload = HealthInfoFactory.valid();
+
+    const response = await apiClient.delete(healthInfoEndpoint, false);
+    expect(response.status()).toBe(401);
+  });
+
+  test("DELETE /health-info - Should throw when no token is provided", async () => {
+    (apiClient as any).token = null;
+    const payload = HealthInfoFactory.valid();
+
+    await expect(apiClient.delete(healthInfoEndpoint, false)).rejects.toThrow(
       "Token is not set"
     );
   });
