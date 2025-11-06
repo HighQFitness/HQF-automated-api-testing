@@ -4,6 +4,7 @@ import { validateHealthInfoResponse } from "../../../utils/schemaValidator";
 import { AccountInfoFactory } from "../../../utils/accountDataFactory";
 import { HealthInfoResponse } from "../../../utils/types";
 import dotenv from "dotenv";
+import { HealthInfoFactory } from "../../../utils/healthDataFactory";
 
 dotenv.config();
 
@@ -33,7 +34,6 @@ test.describe("Account Service - GET Health Information", () => {
     validateHealthInfoResponse(body);
 
     const health = (body as HealthInfoResponse).data;
-    console.log("response: " + JSON.stringify(health))
     expect(health.height.value).toBe(userHealthHeight);
     expect(health.weight.value).toBe(userHealthWeight);
   });
@@ -52,45 +52,47 @@ test.describe("Account Service - GET Health Information", () => {
   });
 });
 
-// test.describe("Account Service - PATCH Account Information", () => {
-//   let apiClient: ApiClient;
+test.describe("Account Service - PATCH Account Information", () => {
+  let apiClient: ApiClient;
 
-//   test.beforeAll(async () => {
-//     apiClient = new ApiClient(baseURL);
-//     await apiClient.init();
-//   });
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
 
-//   test.afterAll(async () => {
-//     await apiClient.dispose();
-//   });
+  test.afterAll(async () => {
+    await apiClient.dispose();
+  });
 
-//   test("PATCH /account-info - Should return valid updated account information", async () => {
-//       const payload = AccountInfoFactory.valid();
+  test("PATCH /health-info - Should return valid updated account information", async () => {
+      const payload = HealthInfoFactory.valid();
+     // console.log("payload: " + JSON.stringify(payload))
 
-//     const response = await apiClient.patch(accountInfoEndpoint, payload, true);
-//     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+    const response = await apiClient.patch(healthInfoEndpoint, payload, true);
+    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 
-//     const body: unknown = await response.json();
-//     validateAccountInfoResponse(body, "partial");
+    const body: unknown = await response.json();
+    validateHealthInfoResponse(body);
+//console.log("response is: " + JSON.stringify(body))
+    const health = (body as HealthInfoResponse).data;
+    expect(health.height.value).toBe(userHealthHeight);
+    expect(health.weight.value).toBe(userHealthWeight);
+  });
 
-//     const account = (body as AccountInfoResponse).data;
-//     expect(account.email).toBe(email);
-//   });
+  test("PATCH /health-info - Should return 401 Unauthorized with invalid token", async () => {
+    (apiClient as any).token = "invalid-token-12345";
+    const payload = HealthInfoFactory.valid();
 
-//   test("GET /account-info - Should return 401 Unauthorized with invalid token", async () => {
-//     (apiClient as any).token = "invalid-token-12345";
-//     const payload = AccountInfoFactory.valid();
+    const response = await apiClient.patch(healthInfoEndpoint, payload, false);
+    expect(response.status()).toBe(401);
+  });
 
-//     const response = await apiClient.patch(accountInfoEndpoint, payload, false);
-//     expect(response.status()).toBe(401);
-//   });
+  test("PATCH /health-info - Should throw when no token is provided", async () => {
+    (apiClient as any).token = null;
+    const payload = HealthInfoFactory.valid();
 
-//   test("GET /account-info - Should throw when no token is provided", async () => {
-//     (apiClient as any).token = null;
-//     const payload = AccountInfoFactory.valid();
-
-//     await expect(apiClient.patch(accountInfoEndpoint,payload, false)).rejects.toThrow(
-//       "Token is not set"
-//     );
-//   });
-// });
+    await expect(apiClient.patch(healthInfoEndpoint,payload, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
+});

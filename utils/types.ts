@@ -110,5 +110,7 @@ export interface HealthInfoResponse {
     height: Record<string, unknown>;
     weight: Record<string, unknown>;
     createdAt: string;
+    birth_day: string;
+    gender: string;
   };
 }
