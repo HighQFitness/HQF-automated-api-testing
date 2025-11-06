@@ -145,3 +145,24 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(data.address).toHaveProperty("address1");
   expect(data.address).toHaveProperty("city");
 }
+
+export function validateHealthInfoResponse(
+  body: unknown) {
+  const data = (body as any).data;
+
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
+
+  expect(data).toHaveProperty("id");
+  expect(data).toHaveProperty("height");
+  expect(data).toHaveProperty("weight");
+  expect(data).toHaveProperty("createdAt");
+
+  expect(typeof data.id).toBe("string");
+  expect(typeof data.createdAt).toBe("string");
+  expect(typeof data.height).toBe("object");
+  expect(typeof data.weight).toBe("object");
+}

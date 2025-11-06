@@ -100,3 +100,15 @@ export interface AccountResponse {
     avatar: string;
   };
 }
+export interface HealthInfoResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    id: string;
+    height: Record<string, unknown>;
+    weight: Record<string, unknown>;
+    createdAt: string;
+  };
+}
