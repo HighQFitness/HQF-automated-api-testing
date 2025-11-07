@@ -60,7 +60,7 @@ test.describe("Account Service - GET Notifications preferences", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("GET /notification-preferences - Should throw when no token is provided", async () => {
+  test("GET /notification-preferences - Should throw error when no token is provided", async () => {
     (apiClient as any).token = null;
     await expect(
       apiClient.get(notificationPreferencesEndpoint, false)

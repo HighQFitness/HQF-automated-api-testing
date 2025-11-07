@@ -122,7 +122,7 @@ test.describe("Account Service - DELETE Health Information", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("DELETE /health-info - Should throw when no token is provided", async () => {
+  test("DELETE /health-info - Should throw error when no token is provided", async () => {
     (apiClient as any).token = null;
     const payload = HealthInfoFactory.valid();
 

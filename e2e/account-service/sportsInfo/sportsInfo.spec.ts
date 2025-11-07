@@ -45,18 +45,18 @@ test.describe("Account Service - GET Sports info", () => {
   }
 });
 
-//   test("GET /health-info - Should return 401 Unauthorized with invalid token", async () => {
-//     (apiClient as any).token = "invalid-token-12345";
-//     const response = await apiClient.get(healthInfoEndpoint, false);
-//     expect(response.status()).toBe(401);
-//   });
+  test("GET /sports-info - Should return 401 Unauthorized with invalid token", async () => {
+    (apiClient as any).token = "invalid-token-12345";
+    const response = await apiClient.get(sportsInfoEndpoint, false);
+    expect(response.status()).toBe(401);
+  });
 
-//   test("GET /health-info - Should throw when no token is provided", async () => {
-//     (apiClient as any).token = null;
-//     await expect(apiClient.get(healthInfoEndpoint, false)).rejects.toThrow(
-//       "Token is not set"
-//     );
-//   });
+  test("GET /sports-info - Should throw error when no token is provided", async () => {
+    (apiClient as any).token = null;
+    await expect(apiClient.get(sportsInfoEndpoint, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
 });
 
 // test.describe("Account Service - PATCH Health Information", () => {
