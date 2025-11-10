@@ -11,4 +11,7 @@ export class SportsInfoDataFactory {
       ],
     };
   }
+  static buildUpdatePayload(name = "CrossFit") {
+    return { name };
+  }
 }

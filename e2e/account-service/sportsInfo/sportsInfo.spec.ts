@@ -3,7 +3,8 @@ import { ApiClient } from "../../../utils/apiClient";
 import { validateSportsInfoResponse } from "../../../utils/schemaValidator";
 import { SportsInfoResponse } from "../../../utils/types"
 import dotenv from "dotenv";
-//import { SportsInfoFactory } from "../../../utils/healthDataFactory";
+import { validate as validateUUID } from "uuid";
+import { SportsInfoDataFactory } from "../../../utils/sportsInfoFactory";
 
 dotenv.config();
 
@@ -59,47 +60,54 @@ test.describe("Account Service - GET Sports info", () => {
   });
 });
 
-// test.describe("Account Service - PATCH Health Information", () => {
-//   let apiClient: ApiClient;
+test.describe("Account Service - PATCH Sports Information", () => {
+  let apiClient: ApiClient;
 
-//   test.beforeAll(async () => {
-//     apiClient = new ApiClient(baseURL);
-//     await apiClient.init();
-//   });
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
 
-//   test.afterAll(async () => {
-//     await apiClient.dispose();
-//   });
+  test.afterAll(async () => {
+    await apiClient.dispose();
+  });
 
-//   test("PATCH /health-info - Should return valid updated health information", async () => {
-//       const payload = HealthInfoFactory.valid();
+  test("PATCH /sports-info - Should update sport name successfully", async () => {
+  const payload = { name: "CrossFit" };
+  const response = await apiClient.patch("/account_service_v2/api/v1/sports-info", payload, true);
 
-//     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
-//     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+  expect(response.status(), "Expected 200 OK").toBe(200);
 
-//     const body: unknown = await response.json();
-//     const health = (body as HealthInfoResponse).data;
-//     expect(health.height.value).toBe(userHealthHeight);
-//     expect(health.weight.value).toBe(userHealthWeight);
-//   });
+  const body: unknown = await response.json();
 
-//   test("PATCH /health-info - Should return 401 Unauthorized with invalid token", async () => {
-//     (apiClient as any).token = "invalid-token-12345";
-//     const payload = HealthInfoFactory.valid();
+  const data = (body as any).data;
 
-//     const response = await apiClient.patch(healthInfoEndpoint, payload, false);
-//     expect(response.status()).toBe(401);
-//   });
+  const sport = Array.isArray(data.sportsInfos)
+    ? data.sportsInfos[0]
+    : data;
 
-//   test("PATCH /health-info - Should throw when no token is provided", async () => {
-//     (apiClient as any).token = null;
-//     const payload = HealthInfoFactory.valid();
+  expect(sport, "Expected sport object in response").toBeDefined();
+  expect(validateUUID(sport.id)).toBe(true);
+  expect(sport.name).toBe("CrossFit");
+});
 
-//     await expect(apiClient.patch(healthInfoEndpoint,payload, false)).rejects.toThrow(
-//       "Token is not set"
-//     );
-//   });
-// });
+  test("PATCH /health-info - Should return 401 Unauthorized with invalid token", async () => {
+    (apiClient as any).token = "invalid-token-12345";
+    const payload = SportsInfoDataFactory.returnValidSportsInfo();
+
+    const response = await apiClient.patch(sportsInfoEndpoint, payload, false);
+    expect(response.status()).toBe(401);
+  });
+
+  test("PATCH /health-info - Should throw when no token is provided", async () => {
+    (apiClient as any).token = null;
+    const payload = SportsInfoDataFactory.returnValidSportsInfo();
+
+    await expect(apiClient.patch(sportsInfoEndpoint,payload, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
+});
 
 // test.describe("Account Service - DELETE Health Information", () => {
 //   let apiClient: ApiClient;
