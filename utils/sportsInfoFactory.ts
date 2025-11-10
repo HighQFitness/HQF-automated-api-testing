@@ -1,6 +1,7 @@
 import { SportsInfoResponse } from "../utils/types";
 
 export class SportsInfoDataFactory {
+  data: any;
   static returnValidSportsInfo(): SportsInfoResponse["data"] {
     return {
       sportsInfos: [

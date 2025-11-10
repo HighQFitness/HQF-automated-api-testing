@@ -10,7 +10,6 @@ dotenv.config();
 const baseURL = process.env.API_BASE_URL!;
 const userHealthWeight = Number(process.env.API_HEALTH_WEIGHT!);
 const userHealthHeight = Number(process.env.API_HEALTH_HEIGHT!);
-const userHealthUnit = process.env.API_HEALTH_UNIT!;
 const healthInfoEndpoint = process.env.API_HEALTH_INFO_URL!;
 
 test.describe("Account Service - GET Health Information", () => {

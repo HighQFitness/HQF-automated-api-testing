@@ -1,9 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { ApiClient } from "../../../utils/apiClient";
 import { validateNotificationPreferencesResponse } from "../../../utils/schemaValidator";
-import {
-  HealthInfoResponse,
-  NotificationPreferencesResponse,
+import { NotificationPreferencesResponse,
 } from "../../../utils/types";
 import dotenv from "dotenv";
 import { NotificationPreferencesFactory } from "../../../utils/notificationPreferenceDataFactory";
@@ -36,19 +34,22 @@ test.describe("Account Service - GET Notifications preferences", () => {
     const expected = NotificationPreferencesFactory.returnValidPreferences();
     const actual = (body as NotificationPreferencesResponse).data;
 
-    expected.preferences.forEach(
-      (
-        pref: { notificationCategory: unknown; notificationOption: unknown },
-        index: number
-      ) => {
-        expect(actual.preferences[index].notificationCategory).toBe(
-          pref.notificationCategory
-        );
-        expect(actual.preferences[index].notificationOption).toBe(
-          pref.notificationOption
-        );
-      }
-    );
+    const sortByCategory = (a: any, b: any) =>
+      a.notificationCategory.localeCompare(b.notificationCategory);
+
+    const expectedSorted = [...expected.preferences].sort(sortByCategory);
+    const actualSorted = [...actual.preferences].sort(sortByCategory);
+
+    expect(expectedSorted.length).toBe(actualSorted.length);
+
+    expectedSorted.forEach((pref, index) => {
+      expect(actualSorted[index].notificationCategory).toBe(
+        pref.notificationCategory
+      );
+      expect(actualSorted[index].notificationOption).toBe(
+        pref.notificationOption
+      );
+    });
   });
 
   test("GET /notification-preferences - Should return 401 Unauthorized with invalid token", async () => {
@@ -81,30 +82,24 @@ test.describe("Account Service - PATCH Notification Preferences", () => {
   });
 
   test("PATCH /notification-preferences - Should return valid updated notification preferences", async () => {
-    const payload = NotificationPreferencesFactory.returnValidPreferences();
+  const payload = NotificationPreferencesFactory.returnValidPreferences();
 
-    const response = await apiClient.patch(
-      notificationPreferencesEndpoint,
-      payload,
-      true
+  const response = await apiClient.patch(notificationPreferencesEndpoint, payload, true);
+  expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+
+  const body: unknown = await response.json();
+  const notificationPreferences = (body as NotificationPreferencesResponse).data.preferences;
+
+  payload.preferences.forEach(pref => {
+    const actual = notificationPreferences.find(
+      (p) => p.notificationCategory === pref.notificationCategory
     );
-    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 
-    const body = (await response.json()) as NotificationPreferencesResponse;
-    const notificationPreferences = body.data.preferences;
-
-    expect(Array.isArray(notificationPreferences)).toBe(true);
-    expect(notificationPreferences.length).toBeGreaterThan(0);
-
-    payload.preferences.forEach((pref, index) => {
-      expect(notificationPreferences[index].notificationCategory).toBe(
-        pref.notificationCategory
-      );
-      expect(notificationPreferences[index].notificationOption).toBe(
-        pref.notificationOption
-      );
-    });
+    expect(actual).toBeDefined();
+    expect(actual!.notificationOption).toBe(pref.notificationOption);
   });
+});
+
 
   test("PATCH /notification-preferences - Should return 401 Unauthorized with invalid token", async () => {
     (apiClient as any).token = "invalid-token-12345";

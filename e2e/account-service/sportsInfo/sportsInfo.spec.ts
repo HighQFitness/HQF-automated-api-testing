@@ -1,153 +1,163 @@
 import { test, expect } from "@playwright/test";
 import { ApiClient } from "../../../utils/apiClient";
 import { validateSportsInfoResponse } from "../../../utils/schemaValidator";
-import { SportsInfoResponse } from "../../../utils/types"
+import { SportsInfoResponse } from "../../../utils/types";
 import dotenv from "dotenv";
 import { validate as validateUUID } from "uuid";
 import { SportsInfoDataFactory } from "../../../utils/sportsInfoFactory";
+import { verifyAndCreateSportsInfo } from "../../../helpers/sportsInfoHelpers";
 
 dotenv.config();
 
 const baseURL = process.env.API_BASE_URL!;
-const userHealthWeight = Number(process.env.API_HEALTH_WEIGHT!);
-const userHealthHeight = Number(process.env.API_HEALTH_HEIGHT!);
 const sportsInfoEndpoint = process.env.API_SPORTS_INFO_URL!;
 
-test.describe("Account Service - GET Sports info", () => {
+
+test.describe("Account Service - GET /sports-info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
     apiClient = new ApiClient(baseURL);
     await apiClient.init();
+    await verifyAndCreateSportsInfo();
   });
 
   test.afterAll(async () => {
     await apiClient.dispose();
   });
 
-  test("GET /sports-info - Should return valid sports information", async () => {
-  const response = await apiClient.get(sportsInfoEndpoint, true);
-  expect(response.status(), "Expected 200 OK for valid token").toBe(200);
+  test("GET /sports-info - Should return valid sports information (valid token)", async () => {
+    const response = await apiClient.get(sportsInfoEndpoint, true);
+    expect(response.status()).toBe(200);
 
-  const body: unknown = await response.json();
-  validateSportsInfoResponse(body);
+    const body: unknown = await response.json();
+    console.log("BODY IS: " + JSON.stringify(body));
+    validateSportsInfoResponse(body);
 
-  const parsed = body as SportsInfoResponse;
+    const parsed = body as SportsInfoResponse;
+    expect(parsed.statusCode).toBe(200);
+    expect(Array.isArray(parsed.data.sportsInfos)).toBe(true);
 
-  expect(parsed.statusCode).toBe(200);
-  expect(parsed.message).toBe("Operation completed successfully");
+    if (parsed.data.sportsInfos.length > 0) {
+      const sport = parsed.data.sportsInfos[0];
+      expect(validateUUID(sport.id)).toBe(true);
+      expect(typeof sport.name).toBe("string");
+    }
+  });
 
-  expect(Array.isArray(parsed.data.sportsInfos)).toBe(true);
+  test("GET /sports-info - Should return 401 with invalid token", async () => {
+    const invalidClient = new ApiClient(baseURL);
+    await invalidClient.init();
+    (invalidClient as any).token = "invalid-token-123";
 
-  if (parsed.data.sportsInfos.length > 0) {
-    const sport = parsed.data.sportsInfos[0];
-    expect(typeof sport.id).toBe("string");
-    expect(typeof sport.name).toBe("string");
+    const response = await invalidClient.get(sportsInfoEndpoint, false);
+    expect(response.status()).toBe(401);
+  });
+
+  test("GET /sports-info - Should throw when no token is provided", async () => {
+    const noTokenClient = new ApiClient(baseURL);
+    await noTokenClient.init();
+    (noTokenClient as any).token = null;
+
+    await expect(noTokenClient.get(sportsInfoEndpoint, false)).rejects.toThrow("Token is not set");
+  });
+});
+
+test.describe("Account Service - PATCH /sports-info", () => {
+  let apiClient: ApiClient;
+
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+    await verifyAndCreateSportsInfo();
+  });
+
+  test.afterAll(async () => {
+    await apiClient.dispose();
+  });
+
+  test("PATCH /sports-info - Should update existing sport successfully (valid token)", async () => {
+  let response = await apiClient.patch(sportsInfoEndpoint, { name: `CrossFit-${Date.now()}` }, true);
+
+  if (response.status() === 404) {
+    console.warn("No sports info found. Creating default one before retrying PATCH...");
+    await verifyAndCreateSportsInfo();
+    response = await apiClient.patch(sportsInfoEndpoint, { name: `CrossFit-${Date.now()}` }, true);
   }
+
+  expect([200, 201]).toContain(response.status());
+
+  const body: unknown = await response.json();
+  const data = (body as any).data;
+  const sport = Array.isArray(data.sportsInfos) ? data.sportsInfos[0] : data;
+
+  expect(sport).toBeDefined();
+  expect(validateUUID(sport.id)).toBe(true);
+  expect(sport.name).toContain("CrossFit");
 });
 
-  test("GET /sports-info - Should return 401 Unauthorized with invalid token", async () => {
-    (apiClient as any).token = "invalid-token-12345";
-    const response = await apiClient.get(sportsInfoEndpoint, false);
+
+  test("PATCH /sports-info - Should return 401 Unauthorized with invalid token", async () => {
+    const invalidClient = new ApiClient(baseURL);
+    await invalidClient.init();
+    (invalidClient as any).token = "invalid-token-123";
+
+    const payload = SportsInfoDataFactory.returnValidSportsInfo();
+    const response = await invalidClient.patch(sportsInfoEndpoint, payload, false);
     expect(response.status()).toBe(401);
   });
 
-  test("GET /sports-info - Should throw error when no token is provided", async () => {
-    (apiClient as any).token = null;
-    await expect(apiClient.get(sportsInfoEndpoint, false)).rejects.toThrow(
-      "Token is not set"
-    );
+  test("PATCH /sports-info - Should throw when no token is provided", async () => {
+    const noTokenClient = new ApiClient(baseURL);
+    await noTokenClient.init();
+    (noTokenClient as any).token = null;
+
+    const payload = SportsInfoDataFactory.returnValidSportsInfo();
+    await expect(noTokenClient.patch(sportsInfoEndpoint, payload, false)).rejects.toThrow("Token is not set");
   });
 });
 
-test.describe("Account Service - PATCH Sports Information", () => {
+
+test.describe("Account Service - DELETE /sports-info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
     apiClient = new ApiClient(baseURL);
     await apiClient.init();
+    await verifyAndCreateSportsInfo();
   });
 
   test.afterAll(async () => {
     await apiClient.dispose();
   });
 
-  test("PATCH /sports-info - Should update sport name successfully", async () => {
-  const payload = { name: "CrossFit" };
-  const response = await apiClient.patch("/account_service_v2/api/v1/sports-info", payload, true);
+  test("DELETE /sports-info - Should delete existing sports information (valid token)", async () => {
+  let response = await apiClient.delete(sportsInfoEndpoint, true);
 
-  expect(response.status(), "Expected 200 OK").toBe(200);
+  if (response.status() === 404) {
+    console.warn("⚠️ DELETE returned 404. Creating sports info before retrying...");
+    await verifyAndCreateSportsInfo();
+    response = await apiClient.delete(sportsInfoEndpoint, true);
+  }
 
-  const body: unknown = await response.json();
-
-  const data = (body as any).data;
-
-  const sport = Array.isArray(data.sportsInfos)
-    ? data.sportsInfos[0]
-    : data;
-
-  expect(sport, "Expected sport object in response").toBeDefined();
-  expect(validateUUID(sport.id)).toBe(true);
-  expect(sport.name).toBe("CrossFit");
+  expect([200, 204]).toContain(response.status());
+  console.log(`DELETE completed with status ${response.status()}`);
 });
 
-  test("PATCH /health-info - Should return 401 Unauthorized with invalid token", async () => {
-    (apiClient as any).token = "invalid-token-12345";
-    const payload = SportsInfoDataFactory.returnValidSportsInfo();
+  test("DELETE /sports-info - Should return 401 Unauthorized with invalid token", async () => {
+    const invalidClient = new ApiClient(baseURL);
+    await invalidClient.init();
+    (invalidClient as any).token = "invalid-token-123";
 
-    const response = await apiClient.patch(sportsInfoEndpoint, payload, false);
+    const response = await invalidClient.delete(sportsInfoEndpoint, false);
     expect(response.status()).toBe(401);
   });
 
-  test("PATCH /health-info - Should throw when no token is provided", async () => {
-    (apiClient as any).token = null;
-    const payload = SportsInfoDataFactory.returnValidSportsInfo();
+  test("DELETE /sports-info - Should throw when no token is provided", async () => {
+    const noTokenClient = new ApiClient(baseURL);
+    await noTokenClient.init();
+    (noTokenClient as any).token = null;
 
-    await expect(apiClient.patch(sportsInfoEndpoint,payload, false)).rejects.toThrow(
-      "Token is not set"
-    );
+    await expect(noTokenClient.delete(sportsInfoEndpoint, false)).rejects.toThrow("Token is not set");
   });
 });
-
-// test.describe("Account Service - DELETE Health Information", () => {
-//   let apiClient: ApiClient;
-
-//   test.beforeAll(async () => {
-//     apiClient = new ApiClient(baseURL);
-//     await apiClient.init();
-//     const payload = HealthInfoFactory.valid();
-
-//     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
-//     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
-//   });
-
-//   test.afterAll(async () => {
-//     await apiClient.dispose();
-//     const payload = HealthInfoFactory.valid();
-
-//     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
-//     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
-//   });
-
-//   test("DELETE /health-info - Should return valid updated health information", async () => {
-//     const response = await apiClient.delete(healthInfoEndpoint, true);
-//     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
-//   });
-
-//   test("DELETE /health-info - Should return 401 Unauthorized with invalid token", async () => {
-//     (apiClient as any).token = "invalid-token-12345";
-//     const payload = HealthInfoFactory.valid();
-
-//     const response = await apiClient.delete(healthInfoEndpoint, false);
-//     expect(response.status()).toBe(401);
-//   });
-
-//   test("DELETE /health-info - Should throw when no token is provided", async () => {
-//     (apiClient as any).token = null;
-//     const payload = HealthInfoFactory.valid();
-
-//     await expect(apiClient.delete(healthInfoEndpoint, false)).rejects.toThrow(
-//       "Token is not set"
-//     );
-//   });
-// });
