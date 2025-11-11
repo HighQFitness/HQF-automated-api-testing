@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { WorkoutUnitsResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, DeleteAccountResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -109,6 +109,16 @@ export interface AccountInfoResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
+
 
 export function validateAccountResponse(body: unknown): asserts body is AccountResponse {
   expect(typeof body).toBe("object");
@@ -166,4 +176,52 @@ export function validateHealthInfoResponse(
   expect(typeof data.biologicalSex).toBe("object");
   expect(typeof data.height).toBe("object");
   expect(typeof data.weight).toBe("object");
+}
+
+export function validateNotificationPreferencesResponse(
+  body: unknown
+) {
+  const data = (body as NotificationPreferencesResponse).data;
+
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
+
+  expect(Array.isArray(data.preferences)).toBe(true);
+  expect(data.preferences.length).toBeGreaterThan(0);
+
+  for (const pref of data.preferences) {
+    expect(pref).toHaveProperty("notificationCategory");
+    expect(pref).toHaveProperty("notificationOption");
+
+    expect(typeof pref.notificationCategory).toBe("string");
+    expect(typeof pref.notificationOption).toBe("string");
+  }
+}
+
+export function validateSportsInfoResponse(body: unknown): asserts body is SportsInfoResponse {
+  if (typeof body !== "object" || body === null) {
+    throw new Error("Invalid response: not an object");
+  }
+
+  const res = body as any;
+
+  if (typeof res.statusCode !== "number") throw new Error("Invalid statusCode");
+  if (typeof res.message !== "string") throw new Error("Invalid message");
+  if (typeof res.timestamp !== "string") throw new Error("Invalid timestamp");
+  if (typeof res.path !== "string") throw new Error("Invalid path");
+
+  if (!res.data || typeof res.data !== "object")
+    throw new Error("Invalid data: missing or malformed");
+
+  const sportsInfos = res.data.sportsInfos;
+  if (!Array.isArray(sportsInfos))
+    throw new Error("Invalid data: sportsInfos should be an array");
+
+  for (const sport of sportsInfos) {
+    if (typeof sport.id !== "string") throw new Error("Invalid sport id");
+    if (typeof sport.name !== "string") throw new Error("Invalid sport name");
+  }
 }
