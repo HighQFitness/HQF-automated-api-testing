@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, DeleteAccountResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -109,6 +109,16 @@ export interface AccountInfoResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
+
 
 export function validateAccountResponse(body: unknown): asserts body is AccountResponse {
   expect(typeof body).toBe("object");
