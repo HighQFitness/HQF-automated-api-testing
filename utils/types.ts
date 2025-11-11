@@ -100,20 +100,46 @@ export interface AccountResponse {
     avatar: string;
   };
 }
-export interface UsernameResponse {
+export interface HealthInfoResponse {
   statusCode: number;
   message: string;
   timestamp: string;
   path: string;
   data: {
-    username: string;
+    id: string;
+    height: Record<string, unknown>;
+    weight: Record<string, unknown>;
+    createdAt: string;
+    birth_day: string;
+    gender: string;
   };
 }
-export interface DeleteAccountResponse {
+
+export interface NotificationPreferencesResponse {
   statusCode: number;
   message: string;
   timestamp: string;
   path: string;
-  data: Record<string, never>;
+  data: {
+    preferences: Array<{
+      notificationCategory: string;
+      notificationOption: string;
+    }>;
+  };
+}
+export interface SportInfo {
+  id: string;
+  name: string;
 }
 
+export interface SportsInfoData {
+  sportsInfos: SportInfo[];
+}
+
+export interface SportsInfoResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: SportsInfoData;
+}

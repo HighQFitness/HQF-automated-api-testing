@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
-import { WorkoutUnitsResponse } from "./types";
-import { DeleteAccountResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, DeleteAccountResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -157,40 +156,71 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(data.address).toHaveProperty("city");
 }
 
-export function validateUsernameResponse(body: unknown): asserts body is UsernameResponse {
-  expect(body).toHaveProperty("statusCode");
+export function validateHealthInfoResponse(
+  body: unknown) {
+  const data = (body as any).data;
+
+  expect(body).toHaveProperty("statusCode", 200);
   expect(body).toHaveProperty("message");
   expect(body).toHaveProperty("timestamp");
   expect(body).toHaveProperty("path");
   expect(body).toHaveProperty("data");
 
-  const data = (body as UsernameResponse).data;
+  expect(data).toHaveProperty("id");
+  expect(data).toHaveProperty("height");
+  expect(data).toHaveProperty("weight");
+  expect(data).toHaveProperty("createdAt");
 
-  expect(data).toHaveProperty("username");
-  expect(typeof data.username).toBe("string");
-
-  const res = body as UsernameResponse;
-  expect(typeof res.statusCode).toBe("number");
-  expect(typeof res.message).toBe("string");
-  expect(typeof res.timestamp).toBe("string");
-  expect(typeof res.path).toBe("string");
+  expect(typeof data.id).toBe("string");
+  expect(typeof data.createdAt).toBe("string");
+  expect(typeof data.height).toBe("object");
+  expect(typeof data.weight).toBe("object");
 }
 
-export function validateDeleteAccountResponse(body: unknown): asserts body is DeleteAccountResponse {
-  // Ensure top-level structure exists
-  expect(body).toHaveProperty("statusCode");
+export function validateNotificationPreferencesResponse(
+  body: unknown
+) {
+  const data = (body as NotificationPreferencesResponse).data;
+
+  expect(body).toHaveProperty("statusCode", 200);
   expect(body).toHaveProperty("message");
   expect(body).toHaveProperty("timestamp");
   expect(body).toHaveProperty("path");
   expect(body).toHaveProperty("data");
 
-  const res = body as DeleteAccountResponse;
+  expect(Array.isArray(data.preferences)).toBe(true);
+  expect(data.preferences.length).toBeGreaterThan(0);
 
-  expect(typeof res.statusCode).toBe("number");
-  expect(typeof res.message).toBe("string");
-  expect(typeof res.timestamp).toBe("string");
-  expect(typeof res.path).toBe("string");
+  for (const pref of data.preferences) {
+    expect(pref).toHaveProperty("notificationCategory");
+    expect(pref).toHaveProperty("notificationOption");
 
-  expect(typeof res.data).toBe("object");
-  expect(Object.keys(res.data).length).toBe(0);
+    expect(typeof pref.notificationCategory).toBe("string");
+    expect(typeof pref.notificationOption).toBe("string");
+  }
+}
+
+export function validateSportsInfoResponse(body: unknown): asserts body is SportsInfoResponse {
+  if (typeof body !== "object" || body === null) {
+    throw new Error("Invalid response: not an object");
+  }
+
+  const res = body as any;
+
+  if (typeof res.statusCode !== "number") throw new Error("Invalid statusCode");
+  if (typeof res.message !== "string") throw new Error("Invalid message");
+  if (typeof res.timestamp !== "string") throw new Error("Invalid timestamp");
+  if (typeof res.path !== "string") throw new Error("Invalid path");
+
+  if (!res.data || typeof res.data !== "object")
+    throw new Error("Invalid data: missing or malformed");
+
+  const sportsInfos = res.data.sportsInfos;
+  if (!Array.isArray(sportsInfos))
+    throw new Error("Invalid data: sportsInfos should be an array");
+
+  for (const sport of sportsInfos) {
+    if (typeof sport.id !== "string") throw new Error("Invalid sport id");
+    if (typeof sport.name !== "string") throw new Error("Invalid sport name");
+  }
 }
