@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, PillsResponse} from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -212,5 +212,34 @@ export function validateSportsInfoResponse(body: unknown): asserts body is Sport
   for (const sport of sportsInfos) {
     if (typeof sport.id !== "string") throw new Error("Invalid sport id");
     if (typeof sport.name !== "string") throw new Error("Invalid sport name");
+  }
+}
+
+export function validatePillsResponse(body: unknown): asserts body is PillsResponse {
+  expect(typeof body).toBe("object");
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path", "/api/v1/pills");
+  expect(body).toHaveProperty("data");
+
+  const data = (body as PillsResponse).data;
+  expect(Array.isArray(data.pills)).toBe(true);
+
+  if (data.pills.length > 0) {
+    for (const pill of data.pills) {
+      expect(pill).toHaveProperty("id");
+      expect(pill).toHaveProperty("pillId");
+      expect(pill).toHaveProperty("macAddress");
+      expect(pill).toHaveProperty("updatedAt");
+      expect(pill).toHaveProperty("createdAt");
+
+      expect(typeof pill.id).toBe("string");
+      expect(typeof pill.pillId).toBe("string");
+      expect(typeof pill.macAddress).toBe("string");
+      expect(typeof pill.position).toBe("number");
+      expect(typeof pill.createdAt).toBe("string");
+      expect(typeof pill.updatedAt).toBe("string");
+    }
   }
 }
