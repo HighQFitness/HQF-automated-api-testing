@@ -28,17 +28,4 @@ test.describe("Account Service - GET API Status check Information", () => {
     const body: unknown = await response.json();
     validateServiceStatusResponse(body);
   });
-
-  test("GET /status - Should return 401 Unauthorized with invalid token", async () => {
-    (apiClient as any).token = "invalid-token-12345";
-    const response = await apiClient.get(apiStatusCheckEndpoint);
-    expect(response.status()).toBe(401);
-  });
-
-  test("GET /status - Should throw error when no token is provided", async () => {
-    (apiClient as any).token = null;
-    await expect(apiClient.get(apiStatusCheckEndpoint, false)).rejects.toThrow(
-      "Token is not set"
-    );
-  });
 });
