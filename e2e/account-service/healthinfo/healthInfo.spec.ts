@@ -25,7 +25,7 @@ test.describe("Account Service - GET Health Information", () => {
   });
 
   test("GET /health-info - Should return valid health information", async () => {
-    const response = await apiClient.get(healthInfoEndpoint);
+    const response = await apiClient.get(healthInfoEndpoint, true);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 
     const body: unknown = await response.json();

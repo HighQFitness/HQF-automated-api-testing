@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, PillsResponse} from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, PillsResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -109,6 +109,16 @@ export interface AccountInfoResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
+
 
 export function validateAccountResponse(body: unknown): asserts body is AccountResponse {
   expect(typeof body).toBe("object");
@@ -144,6 +154,29 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(typeof data.address).toBe("object");
   expect(data.address).toHaveProperty("address1");
   expect(data.address).toHaveProperty("city");
+}
+export function validateUsernameResponse(
+  body: unknown
+): asserts body is UsernameResponse {
+  expect(typeof body).toBe("object");
+  if (!body || typeof body !== "object") throw new Error("Invalid body object");
+
+  const res = body as UsernameResponse;
+
+  expect(res).toHaveProperty("statusCode");
+  expect(res).toHaveProperty("message");
+  expect(res).toHaveProperty("timestamp");
+  expect(res).toHaveProperty("path");
+  expect(res).toHaveProperty("data");
+
+  expect(typeof res.statusCode).toBe("number");
+  expect(typeof res.message).toBe("string");
+  expect(typeof res.timestamp).toBe("string");
+  expect(typeof res.path).toBe("string");
+
+  expect(res.data).toHaveProperty("username");
+  expect(typeof res.data.username).toBe("string");
+  expect(res.data.username.length).toBeGreaterThan(0);
 }
 
 export function validateHealthInfoResponse(
