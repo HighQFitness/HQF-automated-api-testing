@@ -161,3 +161,6 @@ export interface Pill {
   createdAt: string;
   updatedAt: string;
 }
+export interface CreatePillsBody {
+  pills: Pill[];
+}

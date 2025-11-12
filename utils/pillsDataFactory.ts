@@ -1,4 +1,4 @@
-import { PillsResponse } from "../utils/types";
+import { CreatePillsBody, PillsResponse } from "../utils/types";
 
 export class PillsFactory {
   static valid(): PillsResponse["data"] {
@@ -19,5 +19,39 @@ export class PillsFactory {
 
   static empty(): PillsResponse["data"] {
     return { pills: [] };
+  }
+
+  static createValidBody(): CreatePillsBody {
+    return {
+      pills: [
+        {
+          pillId: "0000XXXX-0000-1000-8000-00805F9B34FB",
+          position: 0,
+          macAddress: "00:1A:2B:3C:4D:5E",
+          id: "",
+          macaddress: 0,
+          createdAt: "",
+          updatedAt: ""
+        },
+        {
+          pillId: "0000YYYY-0000-1000-8000-00805F9B34FB",
+          position: 1,
+          macAddress: "00:1A:2B:3C:4D:5F",
+          id: "",
+          macaddress: 0,
+          createdAt: "",
+          updatedAt: ""
+        },
+        {
+          pillId: "0000ZZZZ-0000-1000-8000-00805F9B34FB",
+          position: 2,
+          macAddress: "00:1A:2B:3C:4D:60",
+          id: "",
+          macaddress: 0,
+          createdAt: "",
+          updatedAt: ""
+        },
+      ],
+    };
   }
 }

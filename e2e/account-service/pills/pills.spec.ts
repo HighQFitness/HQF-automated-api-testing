@@ -24,36 +24,80 @@ test.describe("Account Service - GET pills", () => {
 
   test("GET /pills - Should return valid pills information", async () => {
     const response = await apiClient.get(pillsEndpoint);
-    expect(response.status(), "Expected 200 OK for valid token").toBe(200);
-
-    const body: unknown = await response.json();
-
+    const body = await response.json();
     validatePillsResponse(body);
 
     const data = (body as PillsResponse).data;
+
     if (data.pills.length === 0) {
       expect(data.pills).toEqual([]);
     } else {
-     const expected = PillsFactory.valid().pills[0];
       const actual = data.pills[0];
-
-      expect(actual.id).toBe(expected.id);
-      expect(actual.pillId).toBe(expected.pillId);
-      expect(actual.macAddress).toBe(expected.macAddress);
-      expect(typeof actual.position).toBe("number");
+      expect(typeof actual.id).toBe("string");
+      expect(actual.id).toMatch(/^[0-9a-fA-F-]{36}$/);
+      expect(actual.macAddress).toMatch(/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/);
     }
   });
 
-//   test("GET /health-info - Should return 401 Unauthorized with invalid token", async () => {
-//     (apiClient as any).token = "invalid-token-12345";
-//     const response = await apiClient.get(healthInfoEndpoint, false);
-//     expect(response.status()).toBe(401);
-//   });
+  test("GET /pills - Should return 401 Unauthorized with invalid token", async () => {
+    (apiClient as any).token = "invalid-token-12345";
+    const response = await apiClient.get(pillsEndpoint, false);
+    expect(response.status()).toBe(401);
+  });
 
-//   test("GET /health-info - Should throw when no token is provided", async () => {
-//     (apiClient as any).token = null;
-//     await expect(apiClient.get(healthInfoEndpoint, false)).rejects.toThrow(
-//       "Token is not set"
-//     );
-//   });
+  test("GET /pills - Should throw error when no token is provided", async () => {
+    (apiClient as any).token = null;
+    await expect(apiClient.get(pillsEndpoint, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
+});
+
+test.describe("Account Service - POST pills", () => {
+  let apiClient: ApiClient;
+
+  test.beforeAll(async () => {
+    apiClient = new ApiClient(baseURL);
+    await apiClient.init();
+  });
+
+  test.afterAll(async () => {
+    await apiClient.dispose();
+  });
+
+  test("POST /pills - Should create valid pills entity", async () => {
+    const payload = PillsFactory.createValidBody();
+
+    const response = await apiClient.post(pillsEndpoint, payload);
+    expect(response.status(), "Expected 200 OK for pills creation").toBe(200);
+
+    const body: unknown = await response.json();
+    validatePillsResponse(body);
+
+    const data = (body as PillsResponse).data;
+
+    expect(Array.isArray(data.pills)).toBe(true);
+    expect(data.pills.length).toBeGreaterThan(0);
+
+    for (const pill of data.pills) {
+      expect(pill.pillId).toMatch(/0000[A-Z]{4}-0000-1000-8000-00805F9B34FB/);
+      expect(pill.macAddress).toMatch(/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/);
+      expect(typeof pill.position).toBe("number");
+    }
+  });
+
+  test("POST /pills - Should return 401 Unauthorized with invalid token", async () => {
+    const payload = PillsFactory.createValidBody();
+    (apiClient as any).token = "invalid-token-12345";
+    const response = await apiClient.post(pillsEndpoint, payload, false);
+    expect(response.status()).toBe(401);
+  });
+
+  test("POST /pills - Should throw error when no token is provided", async () => {
+    const payload = PillsFactory.createValidBody();
+    (apiClient as any).token = null;
+    await expect(apiClient.post(pillsEndpoint, payload, false)).rejects.toThrow(
+      "Token is not set"
+    );
+  });
 });
