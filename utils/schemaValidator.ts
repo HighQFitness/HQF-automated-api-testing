@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, PillsResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, PillsResponse, ServiceStatusResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -276,4 +276,42 @@ export function validatePillsResponse(body: unknown): asserts body is PillsRespo
 
     expect(pill.macAddress).toMatch(/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/);
   }
+}
+
+export function validateServiceStatusResponse(
+  body: unknown
+): asserts body is ServiceStatusResponse {
+  expect(typeof body).toBe("object");
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path", "/api/v1/status");
+  expect(body).toHaveProperty("data");
+
+  const data = (body as ServiceStatusResponse).data;
+  expect(typeof data).toBe("object");
+
+  expect(typeof data.running).toBe("boolean");
+  expect(typeof data.apiName).toBe("string");
+  expect(typeof data.environment).toBe("string");
+  expect(typeof data.apiUrl).toBe("string");
+  expect(typeof data.timestamp).toBe("string");
+  expect(typeof data.uptime).toBe("string");
+
+  expect(typeof data.systemUsage).toBe("object");
+  expect(data.systemUsage).toHaveProperty("rss");
+  expect(data.systemUsage).toHaveProperty("heapTotal");
+  expect(data.systemUsage).toHaveProperty("heapUsed");
+  expect(data.systemUsage).toHaveProperty("cpu");
+
+  expect(typeof data.systemUsage.rss).toBe("string");
+  expect(typeof data.systemUsage.heapTotal).toBe("string");
+  expect(typeof data.systemUsage.heapUsed).toBe("string");
+
+  const cpu = data.systemUsage.cpu;
+  expect(typeof cpu).toBe("object");
+  expect(cpu).toHaveProperty("user");
+  expect(cpu).toHaveProperty("system");
+  expect(typeof cpu.user).toBe("string");
+  expect(typeof cpu.system).toBe("string");
 }
