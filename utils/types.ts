@@ -112,6 +112,7 @@ export interface HealthInfoResponse {
     createdAt: string;
     birth_day: string;
     gender: string;
+    biologicalSex: string;
   };
 }
 

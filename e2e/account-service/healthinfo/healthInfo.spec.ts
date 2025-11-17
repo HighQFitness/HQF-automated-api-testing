@@ -63,7 +63,7 @@ test.describe("Account Service - PATCH Health Information", () => {
   });
 
   test("PATCH /health-info - Should return valid updated health information", async () => {
-      const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid();
 
     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
@@ -86,9 +86,9 @@ test.describe("Account Service - PATCH Health Information", () => {
     (apiClient as any).token = null;
     const payload = HealthInfoFactory.valid();
 
-    await expect(apiClient.patch(healthInfoEndpoint,payload, false)).rejects.toThrow(
-      "Token is not set"
-    );
+    await expect(
+      apiClient.patch(healthInfoEndpoint, payload, false)
+    ).rejects.toThrow("Token is not set");
   });
 });
 
