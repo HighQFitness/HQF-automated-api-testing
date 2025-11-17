@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, DeleteAccountResponse } from "./types";
+import { NotificationPreferencesResponse, WorkoutUnitsResponse, SportsInfoResponse, PillsResponse } from "./types";
 
 export function validateWorkoutUnitsResponse(
   body: unknown
@@ -155,6 +155,29 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(data.address).toHaveProperty("address1");
   expect(data.address).toHaveProperty("city");
 }
+export function validateUsernameResponse(
+  body: unknown
+): asserts body is UsernameResponse {
+  expect(typeof body).toBe("object");
+  if (!body || typeof body !== "object") throw new Error("Invalid body object");
+
+  const res = body as UsernameResponse;
+
+  expect(res).toHaveProperty("statusCode");
+  expect(res).toHaveProperty("message");
+  expect(res).toHaveProperty("timestamp");
+  expect(res).toHaveProperty("path");
+  expect(res).toHaveProperty("data");
+
+  expect(typeof res.statusCode).toBe("number");
+  expect(typeof res.message).toBe("string");
+  expect(typeof res.timestamp).toBe("string");
+  expect(typeof res.path).toBe("string");
+
+  expect(res.data).toHaveProperty("username");
+  expect(typeof res.data.username).toBe("string");
+  expect(res.data.username.length).toBeGreaterThan(0);
+}
 
 export function validateHealthInfoResponse(
   body: unknown) {
@@ -223,5 +246,35 @@ export function validateSportsInfoResponse(body: unknown): asserts body is Sport
   for (const sport of sportsInfos) {
     if (typeof sport.id !== "string") throw new Error("Invalid sport id");
     if (typeof sport.name !== "string") throw new Error("Invalid sport name");
+  }
+}
+
+export function validatePillsResponse(body: unknown): asserts body is PillsResponse {
+  expect(typeof body).toBe("object");
+  expect(body).toHaveProperty("statusCode", 200);
+  expect(body).toHaveProperty("message");
+  expect(body).toHaveProperty("timestamp");
+  expect(body).toHaveProperty("path");
+  expect(body).toHaveProperty("data");
+
+  const data = (body as PillsResponse).data;
+  expect(Array.isArray(data.pills)).toBe(true);
+
+  for (const pill of data.pills) {
+    expect(pill).toHaveProperty("id");
+    expect(pill).toHaveProperty("pillId");
+    expect(pill).toHaveProperty("position");
+    expect(pill).toHaveProperty("macAddress");
+    expect(pill).toHaveProperty("createdAt");
+    expect(pill).toHaveProperty("updatedAt");
+
+    expect(typeof pill.id).toBe("string");
+    expect(typeof pill.pillId).toBe("string");
+    expect(typeof pill.position).toBe("number");
+    expect(typeof pill.macAddress).toBe("string");
+    expect(typeof pill.createdAt).toBe("string");
+    expect(typeof pill.updatedAt).toBe("string");
+
+    expect(pill.macAddress).toMatch(/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/);
   }
 }

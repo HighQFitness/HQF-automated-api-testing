@@ -100,6 +100,17 @@ export interface AccountResponse {
     avatar: string;
   };
 }
+export interface UsernameResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    username: string;
+  };
+}
+
+
 export interface HealthInfoResponse {
   statusCode: number;
   message: string;
@@ -143,4 +154,25 @@ export interface SportsInfoResponse {
   timestamp: string;
   path: string;
   data: SportsInfoData;
+}
+export interface PillsResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    pills: Pill[];
+  };
+}
+export interface Pill {
+  id: string;
+  pillId: string;
+  macaddress: number;
+  position: number;
+  macAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CreatePillsBody {
+  pills: Pill[];
 }
