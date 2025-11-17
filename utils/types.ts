@@ -176,3 +176,27 @@ export interface Pill {
 export interface CreatePillsBody {
   pills: Pill[];
 }
+
+export interface ServiceStatusResponse {
+  statusCode: number;
+  message: string;
+  timestamp: string;
+  path: string;
+  data: {
+    running: boolean;
+    apiName: string;
+    environment: string;
+    apiUrl: string;
+    timestamp: string;
+    uptime: string;
+    systemUsage: {
+      rss: string;
+      heapTotal: string;
+      heapUsed: string;
+      cpu: {
+        user: string;
+        system: string;
+      };
+    };
+  };
+}

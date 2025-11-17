@@ -5,6 +5,7 @@ import { validateUsernameResponse } from "../../../utils/schemaValidator";
 import { AccountInfoFactory } from "../../../utils/accountDataFactory";
 import { AccountInfoResponse } from "../../../utils/types";
 import { UsernameResponse } from "../../../utils/types";
+import { WorkoutUnitsFactory } from "../../../utils/dataFactory";
 
 import dotenv from "dotenv";
 
@@ -111,6 +112,8 @@ test.describe("Account Service - GET User Name", () => {
   });
 
   test("GET /account-info/username - Should return valid updated account information", async () => {
+    const userName = WorkoutUnitsFactory.returnUserName();
+
     const response = await apiClient.get(accountUserInfoEndpointWithParam, true);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 
@@ -118,7 +121,7 @@ test.describe("Account Service - GET User Name", () => {
     validateUsernameResponse(body);
 
     const data = (body as UsernameResponse).data;
-    expect(data.username).toContain("user_");
+    expect(data.username).toContain(userName);
     expect(body).toHaveProperty("path");
     expect(body).toHaveProperty("message");
   });

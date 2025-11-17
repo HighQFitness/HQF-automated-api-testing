@@ -28,4 +28,7 @@ export class WorkoutUnitsFactory {
   static returnChangePhoneNumber(): string{
     return '+5491156062206'
   }
+  static returnUserName(): string{
+    return 'Jimena Alejandra Nemiña'
+  }
 }
