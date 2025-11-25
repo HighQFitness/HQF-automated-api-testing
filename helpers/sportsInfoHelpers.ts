@@ -14,7 +14,7 @@ export async function verifyAndCreateSportsInfo(): Promise<SportsInfoResponse | 
   const getResponse = await apiClient.get(sportsInfoEndpoint, true);
   if (getResponse.status() === 200) {
     const body = (await getResponse.json()) as SportsInfoResponse;
-    if (body.data?.sportsInfos?.length > 0) {
+    if (body.data?.sportsInfo?.length > 0) {
       return body;
     }
   }

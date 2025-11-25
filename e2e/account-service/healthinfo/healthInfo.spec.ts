@@ -4,23 +4,27 @@ import { validateHealthInfoResponse } from "../../../utils/schemaValidator";
 import { HealthInfoResponse } from "../../../utils/types";
 import dotenv from "dotenv";
 import { HealthInfoFactory } from "../../../utils/healthDataFactory";
+import { verifyAndCreateHealthInfo } from "../../../helpers/healthInfoHelpers";
 
 dotenv.config();
 
 const baseURL = process.env.API_BASE_URL!;
 const userHealthWeight = Number(process.env.API_HEALTH_WEIGHT!);
 const userHealthHeight = Number(process.env.API_HEALTH_HEIGHT!);
+const userBiologicalSex = process.env.API_BIOLOGICAL_SEX!;
 const healthInfoEndpoint = process.env.API_HEALTH_INFO_URL!;
 
-test.describe("Account Service - GET Health Information", () => {
+test.describe.serial("Account Service - GET Health Information", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
     apiClient = new ApiClient(baseURL);
     await apiClient.init();
+    await verifyAndCreateHealthInfo();
   });
 
   test.afterAll(async () => {
+    await verifyAndCreateHealthInfo();
     await apiClient.dispose();
   });
 
@@ -50,7 +54,7 @@ test.describe("Account Service - GET Health Information", () => {
   });
 });
 
-test.describe("Account Service - PATCH Health Information", () => {
+test.describe.serial("Account Service - PATCH Health Information", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
@@ -63,7 +67,7 @@ test.describe("Account Service - PATCH Health Information", () => {
   });
 
   test("PATCH /health-info - Should return valid updated health information", async () => {
-    const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid(userBiologicalSex);
 
     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
@@ -72,11 +76,12 @@ test.describe("Account Service - PATCH Health Information", () => {
     const health = (body as HealthInfoResponse).data;
     expect(health.height.value).toBe(userHealthHeight);
     expect(health.weight.value).toBe(userHealthWeight);
+    expect(health.biologicalSex).toBeDefined;
   });
 
   test("PATCH /health-info - Should return 401 Unauthorized with invalid token", async () => {
     (apiClient as any).token = "invalid-token-12345";
-    const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid(userBiologicalSex);
 
     const response = await apiClient.patch(healthInfoEndpoint, payload, false);
     expect(response.status()).toBe(401);
@@ -84,7 +89,7 @@ test.describe("Account Service - PATCH Health Information", () => {
 
   test("PATCH /health-info - Should throw when no token is provided", async () => {
     (apiClient as any).token = null;
-    const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid(userBiologicalSex);
 
     await expect(
       apiClient.patch(healthInfoEndpoint, payload, false)
@@ -92,19 +97,20 @@ test.describe("Account Service - PATCH Health Information", () => {
   });
 });
 
-test.describe("Account Service - DELETE Health Information", () => {
+test.describe.serial("Account Service - DELETE Health Information", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
     apiClient = new ApiClient(baseURL);
     await apiClient.init();
-    const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid(userBiologicalSex);
 
     const response = await apiClient.patch(healthInfoEndpoint, payload, true);
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
   });
 
   test.afterAll(async () => {
+    await verifyAndCreateHealthInfo();
     await apiClient.dispose();
   });
 
@@ -115,7 +121,7 @@ test.describe("Account Service - DELETE Health Information", () => {
 
   test("DELETE /health-info - Should return 401 Unauthorized with invalid token", async () => {
     (apiClient as any).token = "invalid-token-12345";
-    const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid(userBiologicalSex);
 
     const response = await apiClient.delete(healthInfoEndpoint, false);
     expect(response.status()).toBe(401);
@@ -123,7 +129,7 @@ test.describe("Account Service - DELETE Health Information", () => {
 
   test("DELETE /health-info - Should throw error when no token is provided", async () => {
     (apiClient as any).token = null;
-    const payload = HealthInfoFactory.valid();
+    const payload = HealthInfoFactory.valid(userBiologicalSex);
 
     await expect(apiClient.delete(healthInfoEndpoint, false)).rejects.toThrow(
       "Token is not set"
