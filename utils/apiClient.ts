@@ -33,11 +33,17 @@ export class ApiClient {
       baseURL: this.baseURL,
       extraHTTPHeaders: { Accept: "application/json" },
     });
-
-    this.token = process.env.API_ACCESS_TOKEN || null;
-    this.refreshToken = process.env.API_REFRESH_TOKEN || null;
-  }
-
+  
+    const email = process.env.API_EMAIL;
+    const password = process.env.API_PASSWORD;
+  
+    if (!email || !password) {
+      throw new Error("Missing API_EMAIL or API_PASSWORD in environment variables");
+    }
+  
+    await this.loginWithEmailPassword(email, password);
+  }  
+  
   setToken(token: string): void {
     this.token = token;
   }
@@ -89,6 +95,25 @@ export class ApiClient {
     return response;
   }
 
+  async loginWithEmailPassword(email: string, password: string): Promise<void> {
+    const signInEndpoint = process.env.API_SIGNIN_URL!;
+    const response = await this.apiContext.post(signInEndpoint, {
+      data: { email, password },
+      headers: { "Content-Type": "application/json" },
+    });
+  
+    if (!response.ok()) {
+      throw new Error(`Login failed: ${response.status()} - ${await response.text()}`);
+    }
+  
+    const body = await response.json();
+  
+    this.token = body.data.accessToken;
+    this.refreshToken = body.data.refreshToken;
+  
+    console.log("Logged in successfully and tokens stored");
+  }
+  
   async refreshAccessToken(): Promise<void> {
     if (!this.refreshToken) throw new Error("No refresh token available");
 

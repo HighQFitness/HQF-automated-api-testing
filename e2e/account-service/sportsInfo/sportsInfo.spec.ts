@@ -12,7 +12,7 @@ dotenv.config();
 const baseURL = process.env.API_BASE_URL!;
 const sportsInfoEndpoint = process.env.API_SPORTS_INFO_URL!;
 
-test.describe("Account Service - GET /sports-info", () => {
+test.describe.serial("Account Service - GET /sports-info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
@@ -34,10 +34,10 @@ test.describe("Account Service - GET /sports-info", () => {
 
     const parsed = body as SportsInfoResponse;
     expect(parsed.statusCode).toBe(200);
-    expect(Array.isArray(parsed.data.sportsInfos)).toBe(true);
+    expect(Array.isArray(parsed.data.sportsInfo)).toBe(true);
 
-    if (parsed.data.sportsInfos.length > 0) {
-      const sport = parsed.data.sportsInfos[0];
+    if (parsed.data.sportsInfo.length > 0) {
+      const sport = parsed.data.sportsInfo[0];
       expect(validateUUID(sport.id)).toBe(true);
       expect(typeof sport.name).toBe("string");
     }
@@ -63,7 +63,7 @@ test.describe("Account Service - GET /sports-info", () => {
   });
 });
 
-test.describe("Account Service - PATCH /sports-info", () => {
+test.describe.serial("Account Service - PATCH /sports-info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
@@ -99,7 +99,7 @@ test.describe("Account Service - PATCH /sports-info", () => {
 
     const body: unknown = await response.json();
     const data = (body as any).data;
-    const sport = Array.isArray(data.sportsInfos) ? data.sportsInfos[0] : data;
+    const sport = Array.isArray(data.sportsInfo) ? data.sportsInfo[0] : data;
 
     expect(sport).toBeDefined();
     expect(validateUUID(sport.id)).toBe(true);
@@ -132,7 +132,7 @@ test.describe("Account Service - PATCH /sports-info", () => {
   });
 });
 
-test.describe("Account Service - DELETE /sports-info", () => {
+test.describe.serial("Account Service - DELETE /sports-info", () => {
   let apiClient: ApiClient;
 
   test.beforeAll(async () => {
@@ -142,6 +142,7 @@ test.describe("Account Service - DELETE /sports-info", () => {
   });
 
   test.afterAll(async () => {
+    await verifyAndCreateSportsInfo();
     await apiClient.dispose();
   });
 

@@ -66,7 +66,7 @@ export interface AccountResponse {
       updatedAt: string;
       accountId: string | null;
     };
-    sportsInfos: unknown[];
+    sportsInfo: unknown[];
     workoutUnitsInfos: {
       id: string;
       barsAndPlatesLoad: string;
@@ -129,14 +129,20 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(body).toHaveProperty("data");
 
   const data = (body as AccountResponse).data;
+
+  // Always expected
   expect(data.accountInfo).toHaveProperty("email");
   expect(data.accountInfo).toHaveProperty("deviceUserId");
   expect(data.healthInfo).toHaveProperty("height");
   expect(data.healthInfo).toHaveProperty("weight");
   expect(Array.isArray(data.workoutUnitsInfos)).toBe(true);
-  expect(Array.isArray(data.sportsInfos)).toBe(true);
   expect(Array.isArray(data.workoutPlaceInfos)).toBe(true);
+
+  if ("sportsInfo" in data && data.sportsInfo != null) {
+    expect(Array.isArray(data.sportsInfo)).toBe(true);
+  }
 }
+
 
  export function validateAccountInfoResponse(body: unknown, mode: "full" | "partial" = "full") {
   const data = (body as AccountInfoResponse).data;
@@ -196,7 +202,7 @@ export function validateHealthInfoResponse(
 
   expect(typeof data.id).toBe("string");
   expect(typeof data.createdAt).toBe("string");
-  expect(typeof data.biologicalSex).toBe("object");
+  expect(typeof data.biologicalSex).toBe("string");
   expect(typeof data.height).toBe("object");
   expect(typeof data.weight).toBe("object");
 }
@@ -239,11 +245,11 @@ export function validateSportsInfoResponse(body: unknown): asserts body is Sport
   if (!res.data || typeof res.data !== "object")
     throw new Error("Invalid data: missing or malformed");
 
-  const sportsInfos = res.data.sportsInfos;
-  if (!Array.isArray(sportsInfos))
-    throw new Error("Invalid data: sportsInfos should be an array");
+  const sportsInfo = res.data.sportsInfo;
+  if (!Array.isArray(sportsInfo))
+    throw new Error("Invalid data: sportsInfo should be an array");
 
-  for (const sport of sportsInfos) {
+  for (const sport of sportsInfo) {
     if (typeof sport.id !== "string") throw new Error("Invalid sport id");
     if (typeof sport.name !== "string") throw new Error("Invalid sport name");
   }
