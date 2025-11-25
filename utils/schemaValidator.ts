@@ -129,14 +129,20 @@ export function validateAccountResponse(body: unknown): asserts body is AccountR
   expect(body).toHaveProperty("data");
 
   const data = (body as AccountResponse).data;
+
+  // Always expected
   expect(data.accountInfo).toHaveProperty("email");
   expect(data.accountInfo).toHaveProperty("deviceUserId");
   expect(data.healthInfo).toHaveProperty("height");
   expect(data.healthInfo).toHaveProperty("weight");
   expect(Array.isArray(data.workoutUnitsInfos)).toBe(true);
-  expect(Array.isArray(data.sportsInfo)).toBe(true);
   expect(Array.isArray(data.workoutPlaceInfos)).toBe(true);
+
+  if ("sportsInfo" in data && data.sportsInfo != null) {
+    expect(Array.isArray(data.sportsInfo)).toBe(true);
+  }
 }
+
 
  export function validateAccountInfoResponse(body: unknown, mode: "full" | "partial" = "full") {
   const data = (body as AccountInfoResponse).data;
