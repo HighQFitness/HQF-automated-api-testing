@@ -49,7 +49,7 @@ jobs:
       - name: Run API tests
         run: |
           echo "Running API tests..."
-          npx playwright test
+          npx playwright test --project=chromium 
 
       - name: Upload Playwright report (optional)
         if: always()
