@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "Installing dependencies..."
-          npm ci
+          npm i
 
       - name: Run API tests
         run: |
