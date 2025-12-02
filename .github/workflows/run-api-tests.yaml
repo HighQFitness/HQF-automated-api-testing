@@ -43,6 +43,10 @@ jobs:
 
       - name: Install missing peer deps
         run: npm i
+        
+      - name: Install Playwright browsers
+        run: |
+          npx playwright install --with-deps
           
       - name: Run API tests
         run: |
