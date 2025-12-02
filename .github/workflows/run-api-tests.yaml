@@ -26,7 +26,7 @@ jobs:
       API_WORKOUTUNITS_URL: ${{ secrets.API_WORKOUTUNITS_URL }}
       API_PHOTO_URL: ${{ secrets.API_PHOTO_URL }}
       API_ACCESS_TOKEN: ${{ secrets.API_ACCESS_TOKEN }}
-      API_PASSWORD: ${{ secrets.API_ACCESS_USER_PASSWORD }}
+      API_PASSWORD: ${{ secrets.API_USER_PASSWORD }}
       API_PHONE: ${{ secrets.API_USER_PHONE }}
 
     steps:
