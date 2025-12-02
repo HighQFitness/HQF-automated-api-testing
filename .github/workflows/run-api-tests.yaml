@@ -45,7 +45,9 @@ jobs:
         run: |
           echo "Installing dependencies..."
           npm ci
-
+      - name: Install missing peer deps
+        run: npm install
+          
       - name: Run API tests
         run: |
           echo "Running API tests..."
