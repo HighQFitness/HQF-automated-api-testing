@@ -5,6 +5,8 @@ import { AccountResponse } from "../../../utils/types";
 import dotenv from "dotenv";
 import path from "path";
 import { WorkoutUnitsFactory } from "../../../utils/dataFactory";
+import { verifyAndCreateSportsInfo } from "../../../helpers/sportsInfoHelpers";
+import { verifyAndCreateHealthInfo } from "../../../helpers/healthInfoHelpers";
 
 dotenv.config();
 
@@ -22,6 +24,8 @@ test.describe("Account Service - GET Account Data", () => {
   test.beforeAll(async () => {
     apiClient = new ApiClient(baseURL);
     await apiClient.init();
+    await verifyAndCreateHealthInfo();
+    await verifyAndCreateSportsInfo();
   });
 
   test.afterAll(async () => {
@@ -33,6 +37,7 @@ test.describe("Account Service - GET Account Data", () => {
     expect(response.status(), "Expected 200 OK for valid token").toBe(200);
 
     const body: unknown = await response.json();
+    console.log(body);
     validateAccountResponse(body);
 
     const account = (body as AccountResponse).data.accountInfo;

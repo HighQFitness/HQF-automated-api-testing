@@ -2,7 +2,7 @@ import { HealthInfoResponse } from "./types";
 
 export class HealthInfoFactory {
 
-  static valid(): Partial<HealthInfoResponse["data"]> {
+  static valid(userBiologicalSex: string | undefined): Partial<HealthInfoResponse["data"]> {
     return {
       height: {
         value: 160,
@@ -14,7 +14,8 @@ export class HealthInfoFactory {
       },
         birthDay: "1988-05-18",
         gender: "female",
-        biologicalSex: "female",
+        
+        biologicalSex: userBiologicalSex,
     };
   }
 }

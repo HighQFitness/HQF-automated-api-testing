@@ -58,7 +58,7 @@ export interface AccountResponse {
       updatedAt: string;
       accountId: string | null;
     };
-    sportsInfos: unknown[];
+    sportsInfo: unknown[];
     workoutUnitsInfos: {
       id: string;
       barsAndPlatesLoad: string;
@@ -117,11 +117,12 @@ export interface HealthInfoResponse {
   timestamp: string;
   path: string;
   data: {
+    healthInfoResponse: any;
     id: string;
     height: Record<string, unknown>;
     weight: Record<string, unknown>;
     createdAt: string;
-    birth_day: string;
+    birthDay: string;
     gender: string;
     biologicalSex: string;
   };
@@ -145,7 +146,7 @@ export interface SportInfo {
 }
 
 export interface SportsInfoData {
-  sportsInfos: SportInfo[];
+  sportsInfo: SportInfo[];
 }
 
 export interface SportsInfoResponse {

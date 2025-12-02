@@ -4,7 +4,7 @@ export class SportsInfoDataFactory {
   data: any;
   static returnValidSportsInfo(): SportsInfoResponse["data"] {
     return {
-      sportsInfos: [
+      sportsInfo: [
         {
           id: "test-id-001",
           name: "CrossFit",

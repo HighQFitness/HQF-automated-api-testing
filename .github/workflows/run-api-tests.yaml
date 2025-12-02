@@ -1,0 +1,25 @@
+name: Run API Tests
+
+on:
+  repository_dispatch:
+    types: [run-api-tests]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print payload
+        run: |
+          echo "Triggered by: ${{ github.event.client_payload.repo }}"
+          echo "PR URL: ${{ github.event.client_payload.pr_url }}"
+          echo "Branch: ${{ github.event.client_payload.branch }}"
+          echo "Commit: ${{ github.event.client_payload.commit }}"
+
+      - name: Checkout API tests repo
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          echo "Running API tests..."
+          # your test command here
