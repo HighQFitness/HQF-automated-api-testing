@@ -66,7 +66,7 @@ export class ApiClient {
     let response: APIResponse;
 
     try {
-      response = await (this.apiContext as any)[method](, {
+      response = await (this.apiContext as any)[method](endpoint, {
         ...options,
         headers: {
           ...this.getHeaders(options.contentType),
