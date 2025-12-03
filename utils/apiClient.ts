@@ -22,7 +22,9 @@ export class ApiClient {
   private refreshToken: string | null = null;
   private baseURL: string;
   private refreshURL: string;
-
+  
+  console.log("BASE URL IS " + JSON.stringify(baseUrl);
+  
   constructor(baseURL: string) {
     this.baseURL = baseURL;
     this.refreshURL = process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
@@ -65,7 +67,7 @@ export class ApiClient {
     let response: APIResponse;
 
     try {
-      response = await (this.apiContext as any)[method](endpoint, {
+      response = await (this.apiContext as any)[method](, {
         ...options,
         headers: {
           ...this.getHeaders(options.contentType),
@@ -137,6 +139,7 @@ export class ApiClient {
   }
 
   async get(endpoint: string, allowRefresh = true): Promise<APIResponse> {
+    console.log("THIS IS GET ENDPOINT " + JSON.stringify(endpoint)
     return this.handleAuth("get", endpoint, {}, allowRefresh);
   }
 
