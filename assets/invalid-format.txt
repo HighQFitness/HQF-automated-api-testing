@@ -1,0 +1,3 @@
+This is a text file that should not be accepted as an image format.
+It will be used to test the ACCOUNT-415-1 error for unsupported media types.
+

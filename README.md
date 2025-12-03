@@ -1,7 +1,7 @@
 # 🧪 Playwright API Testing (TypeScript)
 
 This repository contains automated **API tests** written in **TypeScript** using [Playwright Test](https://playwright.dev/docs/test-api-testing).  
-It validates HighQ Fitness service endpoints — such as authentication and workout units — ensuring that API responses meet schema and data expectations.
+It validates HighQ Fitness service endpoints — ensuring that API responses meet schema and data expectations.
 
 ---
 
@@ -13,30 +13,62 @@ It validates HighQ Fitness service endpoints — such as authentication and work
 | **TypeScript** | Strong typing and cleaner code for test logic |
 | **Playwright** | Test runner with built-in API request context |
 | **Dotenv** | Loads environment variables from `.env` |
+| **ESLint + Prettier** | Code quality and formatting |
 | **Custom Schema Validation** | Ensures responses match expected JSON structure |
 
 ---
 
 ## 📂 Project Structure
 
+The project follows a **modular, domain-driven architecture** similar to NestJS patterns:
+
 ```
 automated-api-testing/
 │
-├── e2e/
-│   └── account-service/
-│       └── workoutunit/
-│           └── workoutUnits.spec.ts      # API test suite
+├── src/
+│   ├── services/
+│   │   └── account-service/          # Account service API tests
+│   │       ├── account/              # Account domain
+│   │       │   ├── config/          # Domain configuration
+│   │       │   ├── types/           # TypeScript interfaces
+│   │       │   ├── validators/      # Response validators
+│   │       │   ├── index.ts         # Domain exports
+│   │       │   └── account.spec.ts  # Test suite
+│   │       ├── account-info/        # Account info domain
+│   │       ├── health-info/         # Health info domain
+│   │       ├── sports-info/         # Sports info domain
+│   │       ├── workout-units/       # Workout units domain
+│   │       ├── pills/               # Pills/IoT devices domain
+│   │       ├── notification-preferences/  # Notification preferences
+│   │       ├── feedback/            # Feedback upload domain
+│   │       └── status/              # API status check
+│   │
+│   └── shared/                      # Shared utilities
+│       ├── client/                  # API client
+│       ├── constants/               # Shared constants
+│       ├── fixtures/                # Playwright fixtures
+│       ├── reporters/               # Custom reporters
+│       └── utils/                   # Utility functions
 │
-├── utils/
-│   ├── apiClient.ts                      # Handles authentication and requests
-│   ├── schemaValidator.ts                # Validates API responses
-│   └── types.ts                          # TypeScript interfaces
+├── config/
+│   └── appConfig.ts                 # Centralized configuration
 │
-├── .env.example                          # Environment variable template
-├── .gitignore                            # Excludes secrets and build artifacts
-├── package.json                          # Dependencies and npm scripts
-└── README.md                             # Project documentation
+├── constants/
+│   └── testData.ts                  # Test data constants
+│
+├── global-setup.ts                  # Global test setup
+├── global-teardown.ts               # Global test teardown
+├── playwright.config.ts             # Playwright configuration
+├── tsconfig.json                    # TypeScript configuration
+└── .env.example                     # Environment variable template
 ```
+
+### Key Features
+
+- **Path Aliases**: Use `@shared/*`, `@config/*`, `@constants/*`, `@services/*` for clean imports
+- **Domain-Driven**: Each API domain has its own folder with types, configs, factories, and validators
+- **Type-Safe**: Full TypeScript coverage with interfaces for all API responses
+- **Modular**: Easy to add new domains or modify existing ones
 
 ---
 
@@ -63,13 +95,21 @@ Create a local `.env` file by copying the provided example:
 cp .env.example .env
 ```
 
-Then fill in your real credentials:
+Then fill in your values:
+
 ```bash
+# Required
 API_BASE_URL=https://mobile.highqfit.com
-API_SIGNIN_URL=/account_service_v2/api/v1/auth/signin
-API_WORKOUTUNITS_URL=/account_service_v2/api/v1/workout-units
-API_EMAIL=XXXx@XXXXcom
-API_PASSWORD=XXXXXXX
+
+# Authentication (recommended)
+API_USER_PHONE=+1234567890
+
+# Optional: Use direct access token instead of phone signin
+# API_ACCESS_TOKEN=your-access-token-here
+
+# Test Data (optional)
+API_USER_EMAIL=jimena@highqfitness.com
+```
 
 > ⚠️ The `.env` file is ignored by Git — never commit real credentials.
 
@@ -77,25 +117,37 @@ API_PASSWORD=XXXXXXX
 
 ## 🚀 Running the Tests
 
-Run all Playwright API tests:
+### Run all tests
 
 ```bash
+npm test
+# or
 npx playwright test
 ```
 
-Run only a specific suite:
+### Run specific test suite
 
 ```bash
-npx playwright test e2e/account-service/workoutunit/workoutUnits.spec.ts
+npx playwright test src/services/account-service/account/account.spec.ts
 ```
 
-Run in interactive UI mode:
+### Run tests by tag
+
+```bash
+# Run only critical tests
+npx playwright test --grep @critical
+
+# Run smoke tests
+npx playwright test --project=smoke
+```
+
+### Run in interactive UI mode
 
 ```bash
 npx playwright test --ui
 ```
 
-View the HTML report after tests:
+### View test report
 
 ```bash
 npx playwright show-report
@@ -108,31 +160,96 @@ npx playwright show-report
 | Command | Description |
 |----------|-------------|
 | `npm install` | Install dependencies |
-| `npx playwright test` | Run all tests |
+| `npm test` | Run all tests |
+| `npm run format` | Format code with Prettier |
+| `npm run format:check` | Check code formatting |
+| `npm run lint` | Run ESLint |
+| `npm run lint:fix` | Fix ESLint issues |
 | `npx playwright show-report` | Open the last test report |
-| `npx playwright codegen <url>` | Record API or UI actions interactively |
 
 ---
 
 ## 🧬 Environment Variables
 
+### Required
+
 | Variable | Description |
-|-----------|-------------|
-| `API_BASE_URL` | Base API URL |
-| `API_SIGNIN_URL` | Login endpoint |
-| `API_WORKOUTUNITS_URL` | Workout units endpoint |
-| `API_EMAIL` | User email for auth |
-| `API_PASSWORD` | User password for auth |
-| `API_KEY` | Optional API key (if required) |
+|----------|-------------|
+| `API_BASE_URL` | Base API URL (e.g., `https://mobile.highqfit.com`) |
+
+### Recommended
+
+| Variable | Description |
+|----------|-------------|
+| `API_USER_PHONE` | Phone number for authentication (phone-based signin returns token without code) |
+
+### Optional
+
+| Variable | Description |
+|----------|-------------|
+| `API_ACCESS_TOKEN` | Direct access token (bypasses phone signin if provided) |
+| `API_USER_EMAIL` | Test email for account attributes (not used for authentication) |
+
+> **Note**: All endpoints use hardcoded defaults. Only `API_BASE_URL` is required. Other environment variables are optional and use sensible defaults if not provided.
+
+---
+
+## 📝 Path Aliases
+
+The project uses TypeScript path aliases for cleaner imports:
+
+```typescript
+// Instead of relative paths:
+import { HttpStatus } from '../../../../shared/constants/http-status-codes';
+
+// Use aliases:
+import { HttpStatus } from '@shared/constants/http-status-codes';
+import { config } from '@config/appConfig';
+import { TestUserData } from '@constants/testData';
+```
+
+### Available Aliases
+
+- `@shared/*` → `src/shared/*`
+- `@config/*` → `config/*`
+- `@constants/*` → `constants/*`
+- `@services/*` → `src/services/*`
 
 ---
 
 ## 🧠 Best Practices
 
-- Keep all credentials in `.env`  
-- Use **TypeScript interfaces** to enforce API response structure  
-- Validate both happy and unhappy paths (invalid token, missing fields, etc.)  
-- Commit only `.env.example`, not `.env`  
+- **Environment Variables**: Keep all credentials in `.env` (never commit it)
+- **Type Safety**: Use TypeScript interfaces to enforce API response structure
+- **Path Aliases**: Always use path aliases instead of relative imports
+- **Test Isolation**: Each test should be independent and clean up after itself
+- **Error Testing**: Validate both happy paths and error scenarios (401, 400, 404, etc.)
+- **Schema Validation**: Use validators to ensure API responses match expected structure
+
+---
+
+## 🏗️ Adding a New Domain
+
+To add a new API domain (e.g., `notifications`):
+
+1. Create folder structure:
+   ```
+   src/services/account-service/notifications/
+   ├── config/
+   │   └── notifications.config.ts
+   ├── types/
+   │   └── notifications.types.ts
+   ├── factories/
+   │   └── notifications.factory.ts
+   ├── validators/
+   │   └── notifications.validator.ts
+   ├── notifications.spec.ts
+   └── index.ts
+   ```
+
+2. Add endpoints to `config/appConfig.ts`
+3. Export from domain's `index.ts`
+4. Write tests in `notifications.spec.ts`
 
 ---
 
@@ -140,3 +257,5 @@ npx playwright show-report
 
 **QA Automation – HighQ Fitness**  
 📧 `jimena@highqfitness.com`
+**Engineering Lead – HighQ Fitness**  
+📧 `joao@highqfitness.com`
