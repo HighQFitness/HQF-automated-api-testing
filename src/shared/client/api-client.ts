@@ -1,5 +1,5 @@
 import { config } from "@config/appConfig";
-import { APIRequestContext, APIResponse, Browser, BrowserContext, chromium } from "@playwright/test";
+import { APIRequestContext, APIResponse, request } from "@playwright/test";
 import * as fs from "fs";
 import * as http from "http";
 import * as https from "https";
@@ -23,8 +23,6 @@ interface RefreshResponse {
  */
 export class ApiClient {
   private apiContext!: APIRequestContext;
-  private browser!: Browser;
-  private browserContext!: BrowserContext;
   private token: string | null = null;
   private refreshToken: string | null = null;
   private baseURL: string;
@@ -38,20 +36,19 @@ export class ApiClient {
   }
 
   async init(): Promise<void> {
-    // Launch Chromium browser and create a browser context
-    // This ensures requests come from a real browser instance
-    this.browser = await chromium.launch({
-      headless: true, // Run in headless mode for API testing
-    });
-
-    // Create a browser context - this shares cookies and session data
-    this.browserContext = await this.browser.newContext({
+    // Create APIRequestContext with browser-like headers
+    // This is the proper way to do API testing with Playwright
+    this.apiContext = await request.newContext({
       baseURL: this.baseURL,
+      extraHTTPHeaders: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        // Custom header to identify automated test requests for whitelisting
+        'X-Test-Request': 'playwright-automated-tests',
+      },
     });
-
-    // Use the browser context's request property for API calls
-    // This makes requests look like they're coming from a real browser
-    this.apiContext = this.browserContext.request;
   
     // Use phone-based signin (hack: returns token without code verification)
     if (process.env.API_ACCESS_TOKEN) {
@@ -366,13 +363,8 @@ export class ApiClient {
   }
 
   async dispose(): Promise<void> {
-    // Close browser context first
-    if (this.browserContext) {
-      await this.browserContext.close();
-    }
-    // Then close the browser
-    if (this.browser) {
-      await this.browser.close();
+    if (this.apiContext) {
+      await this.apiContext.dispose();
     }
   }
 }

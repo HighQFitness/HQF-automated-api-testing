@@ -115,7 +115,7 @@ const DEFAULT_ENDPOINTS = {
 const DEFAULT_TEST_DATA = {
   email: 'jimena@highqfitness.com',
   userName: 'Test User',
-  phoneNumber: '+1234567890',
+  phoneNumber: '+5491156062207',
   phoneNumberAlternate: '+1234567891',
   address: {
     line1: '123 Test Street',
