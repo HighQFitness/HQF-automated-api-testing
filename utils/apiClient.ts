@@ -203,4 +203,11 @@ export class ApiClient {
     await this.apiContext.dispose();
   }
   
+  private buildUrl(endpoint: string): string {
+  if (endpoint.startsWith("http")) return endpoint;
+  if (endpoint.startsWith("/")) return `${this.baseURL}${endpoint}`;
+  return `${this.baseURL}/${endpoint}`;
+}
+
+  
 }
