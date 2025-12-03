@@ -23,11 +23,10 @@ export class ApiClient {
   private baseURL: string;
   private refreshURL: string;
   
-  console.log("BASE URL IS " + JSON.stringify(baseUrl);
-  
   constructor(baseURL: string) {
     this.baseURL = baseURL;
     this.refreshURL = process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
+    console.log("BASE URL:", this.baseURL);
   }
 
   async init(): Promise<void> {
@@ -139,9 +138,9 @@ export class ApiClient {
   }
 
   async get(endpoint: string, allowRefresh = true): Promise<APIResponse> {
-    console.log("THIS IS GET ENDPOINT " + JSON.stringify(endpoint)
-    return this.handleAuth("get", endpoint, {}, allowRefresh);
-  }
+  console.log("THIS IS GET ENDPOINT:", endpoint);
+  return this.handleAuth("get", endpoint, {}, allowRefresh);
+}
 
   async delete(endpoint: string, allowRefresh = true): Promise<APIResponse> {
     return this.handleAuth("delete", endpoint, {}, allowRefresh);
