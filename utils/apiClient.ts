@@ -62,38 +62,37 @@ export class ApiClient {
     options: any = {},
     allowRefresh = true
   ): Promise<APIResponse> {
-    let response: APIResponse;
-
+    if (!this.apiContext) throw new Error("API Context not initialized");
+  
+    const url = this.buildUrl(endpoint);
+  
+    const requestOptions = {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        "Content-Type": "application/json",
+        ...this.buildAuthHeaders(),
+      },
+    };
+  
     try {
-      response = await (this.apiContext as any)[method](endpoint, {
-        ...options,
-        headers: {
-          ...this.getHeaders(options.contentType),
-          ...(options.headers || {}),
-        },
-      });
-    } catch (err) {
-      throw new Error(`Request failed: ${err}`);
-    }
-
-    if (!allowRefresh) {
-      return response;
-    }
-
-    if (response.status() === 401 && this.refreshToken) {
-      console.warn("🔁 Token expired, attempting refresh...");
-      try {
-        await this.refreshAccessToken();
-      } catch (err) {
-        console.error("Token refresh failed:", err);
+      const response = await (this.apiContext as any)[method](url, requestOptions);
+  
+      if (!allowRefresh || response.status() !== 401) {
         return response;
       }
-
-      return this.handleAuth(method, endpoint, options, false);
+  
+      console.warn("Token expired, refreshing...");
+  
+      await this.refreshAccessToken();
+  
+      // retry request ONCE
+      return await (this.apiContext as any)[method](url, requestOptions);
+  
+    } catch (err: any) {
+      throw new Error(`Request failed: ${err}`);
     }
-
-    return response;
-  }
+  }  
 
   async loginWithEmailPassword(email: string, password: string): Promise<void> {
     const signInEndpoint = process.env.API_SIGNIN_URL!;
@@ -141,8 +140,9 @@ export class ApiClient {
 }
 
   async delete(endpoint: string, allowRefresh = true): Promise<APIResponse> {
-    return this.handleAuth("delete", endpoint, {}, allowRefresh);
-  }
+  return this.handleAuth("delete", endpoint, {}, allowRefresh);
+}
+
 
   async post(
     endpoint: string,
@@ -204,10 +204,30 @@ export class ApiClient {
   }
   
   private buildUrl(endpoint: string): string {
-  if (endpoint.startsWith("http")) return endpoint;
-  if (endpoint.startsWith("/")) return `${this.baseURL}${endpoint}`;
-  return `${this.baseURL}/${endpoint}`;
-}
-
+    if (!endpoint) {
+      throw new Error(`Endpoint is invalid: "${endpoint}"`);
+    }
+  
+    if (endpoint.startsWith("http")) {
+      return endpoint;
+    }
+  
+    if (!this.baseURL) {
+      throw new Error("Base URL is not defined");
+    }
+  
+    return `${this.baseURL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+  }
+  
+  private buildAuthHeaders(): Record<string, string> {
+    if (!this.token) {
+      throw new Error("Token is not set");
+    }
+  
+    return {
+      Authorization: `Bearer ${this.token}`,
+    };
+  }
+  
   
 }

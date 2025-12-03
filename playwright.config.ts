@@ -33,7 +33,7 @@ export default defineConfig({
     baseURL: process.env.API_BASE_URL || '',
     extraHTTPHeaders: {
       Accept: 'application/json',
-      Authorization: `Bearer ${process.env.API_TOKEN}`,
+      ...(process.env.API_TOKEN ? { Authorization: `Bearer ${process.env.API_TOKEN}` } : {}),
     },
   },
 
