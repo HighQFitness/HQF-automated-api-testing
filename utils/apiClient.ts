@@ -22,7 +22,7 @@ export class ApiClient {
   private refreshToken: string | null = null;
   private baseURL: string;
   private refreshURL: string;
-
+  
   constructor(baseURL: string) {
     this.baseURL = baseURL;
     this.refreshURL = process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
@@ -137,8 +137,8 @@ export class ApiClient {
   }
 
   async get(endpoint: string, allowRefresh = true): Promise<APIResponse> {
-    return this.handleAuth("get", endpoint, {}, allowRefresh);
-  }
+  return this.handleAuth("get", endpoint, {}, allowRefresh);
+}
 
   async delete(endpoint: string, allowRefresh = true): Promise<APIResponse> {
     return this.handleAuth("delete", endpoint, {}, allowRefresh);
@@ -202,5 +202,12 @@ export class ApiClient {
   async dispose(): Promise<void> {
     await this.apiContext.dispose();
   }
+  
+  private buildUrl(endpoint: string): string {
+  if (endpoint.startsWith("http")) return endpoint;
+  if (endpoint.startsWith("/")) return `${this.baseURL}${endpoint}`;
+  return `${this.baseURL}/${endpoint}`;
+}
+
   
 }
