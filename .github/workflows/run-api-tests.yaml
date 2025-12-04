@@ -21,6 +21,7 @@ jobs:
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
       API_USER_PHONE: ${{ secrets.API_USER_PHONE }}
+      API_ACCESS_TOKEN: ${{ secrets.API_ACCESS_TOKEN }}
 
     steps:
       - name: Print dispatch payload (debug)
