@@ -10,6 +10,12 @@ import { verifyAndCreateSportsInfo } from '../sports-info/helpers/sports-info.he
 import { AccountConfig, validateAccountResponse } from './index';
 import { AccountResponse } from './types/account.types';
 
+
+console.log("=== ACCOUNT SPEC CONFIG ===");
+console.log("HealthInfo endpoint:", config.endpoints.healthInfo);
+console.log("SportsInfo endpoint:", config.endpoints.sportsInfo);
+console.log("=================================");
+
 const accountEndpoint = AccountConfig.endpoints.account;
 const accountAvatarEndpoint = AccountConfig.endpoints.accountAvatar;
 const accountPhotoEndpoint = AccountConfig.endpoints.accountPhoto;
@@ -17,23 +23,25 @@ const phoneChangeEndpoint = AccountConfig.endpoints.phoneChange;
 const phoneVerifyEndpoint = AccountConfig.endpoints.phoneVerify;
 const resendCodeEndpoint = AccountConfig.endpoints.phoneResendCode;
 
-test.describe('Account Service - GET Account Data', () => {
-  test.beforeAll(async () => {
-    // Set up test prerequisites
-    await verifyAndCreateHealthInfo();
-    await verifyAndCreateSportsInfo();
-  });
 
+test.beforeAll(async ({ apiClient }) => {
+  await verifyAndCreateHealthInfo(apiClient);
+  await verifyAndCreateSportsInfo(apiClient);
+});
+
+test.describe('Account service - Get valid acccount data', () => {
+  
   test('GET /account - Should return valid account data', async ({ apiClient }) => {
     const response = await apiClient.get(accountEndpoint);
     expect(response.status(), 'Expected 200 OK for valid token').toBe(HttpStatus.OK);
-
+    const text = await response.text();
     const body: unknown = await response.json();
     validateAccountResponse(body);
 
     const account = (body as AccountResponse).data.accountInfo;
     expect(account.email).toBeDefined();
     expect(account.deviceUserId).toBeDefined();
+    console.log("DEBUG GET /account - Should return valid account data", response.status(), "body:", text);
   });
 
   test('GET /account - Should return 401 Unauthorized with invalid token', async ({ apiClient }) => {

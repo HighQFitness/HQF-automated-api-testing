@@ -1,12 +1,14 @@
-import { config } from "@config/appConfig";
-import { APIRequestContext, APIResponse, request } from "@playwright/test";
+import { APIRequestContext, request, APIResponse } from "@playwright/test";
+import dotenv from "dotenv";
 import * as fs from "fs";
-import * as http from "http";
-import * as https from "https";
-import { URL } from "url";
-import { Logger } from "../utils/logger";
-import { performanceTracker } from "../utils/performance-tracker";
+import { config } from "../../../config/appConfig";
+import { Logger } from "@shared/utils/logger";
 
+dotenv.config();
+
+interface ChangePhoneRequest {
+  phone: string;
+};
 interface RefreshResponse {
   statusCode: number;
   message: string;
@@ -16,48 +18,64 @@ interface RefreshResponse {
   };
 }
 
-/**
- * API Client
- * 
- * Shared HTTP client for all API tests with authentication and token refresh.
- */
 export class ApiClient {
   private apiContext!: APIRequestContext;
   private token: string | null = null;
   private refreshToken: string | null = null;
   private baseURL: string;
   private refreshURL: string;
-  private enablePerformanceTracking: boolean;
   
-  constructor(baseURL: string, options?: { enablePerformanceTracking?: boolean }) {
+  constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.refreshURL = config.endpoints.refreshToken;
-    this.enablePerformanceTracking = options?.enablePerformanceTracking ?? true;
+    this.refreshURL = process.env.API_REFRESH_URL || "/api/v1/auth/refresh";
   }
 
   async init(): Promise<void> {
-    // Create APIRequestContext with browser-like headers
-    // This is the proper way to do API testing with Playwright
     this.apiContext = await request.newContext({
       baseURL: this.baseURL,
       extraHTTPHeaders: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        // Custom header to identify automated test requests for whitelisting
-        'X-Test-Request': 'playwright-automated-tests',
+        Accept: "application/json",
       },
     });
   
-    // Use phone-based signin (hack: returns token without code verification)
+    // -----------------------------------
+    // OPTION 1: Environment-provided token
+    // -----------------------------------
     if (process.env.API_ACCESS_TOKEN) {
-      // Use access token directly if provided
       this.token = process.env.API_ACCESS_TOKEN;
-    } else {
-      await this.loginWithPhone(config.auth.phone);
+      Logger.info("Using API_ACCESS_TOKEN from environment");
+      return;
     }
-  }  
+  
+    // -----------------------------------
+    // OPTION 2: Phone-based login (new flow)
+    // -----------------------------------
+    if (config.auth?.phone) {
+      Logger.info("Attempting phone-based login...");
+      await this.loginWithPhone(config.auth.phone);
+      return;
+    }
+  
+    // -----------------------------------
+    // OPTION 3: Fallback to email/password
+    // -----------------------------------
+    const email = process.env.API_EMAIL;
+    const password = process.env.API_PASSWORD;
+  
+    if (email && password) {
+      Logger.info("Attempting email/password login...");
+      await this.loginWithEmailPassword(email, password);
+      return;
+    }
+  
+    // -----------------------------------
+    // No authentication method available
+    // -----------------------------------
+    throw new Error(
+      "No authentication method available. Provide API_ACCESS_TOKEN, config.auth.phone, or API_EMAIL/API_PASSWORD."
+    );
+  }
+  
   
   setToken(token: string): void {
     this.token = token;
@@ -67,7 +85,6 @@ export class ApiClient {
     if (!this.token) throw new Error("Token is not set");
     return {
       Authorization: `Bearer ${this.token}`,
-      Accept: "application/json",
       ...(contentType ? { "Content-Type": contentType } : {}),
     };
   }
@@ -78,225 +95,87 @@ export class ApiClient {
     options: any = {},
     allowRefresh = true
   ): Promise<APIResponse> {
-    const startTime = Date.now();
-    let response: APIResponse;
-
-    // Make the request directly - no retries
-    if (!this.token) {
-      Logger.error(`No token available for ${method.toUpperCase()} ${endpoint}`);
-      throw new Error("Token is not set");
-    }
-    
-    // Ensure Authorization header is always included and takes precedence
-    // Format: Authorization: "Bearer $token"
-    const authHeaders = this.getHeaders(options.contentType);
-    const headers = {
-      ...(options.headers || {}),
-      ...authHeaders, // Authorization header takes precedence
+    if (!this.apiContext) throw new Error("API Context not initialized");
+  
+    const url = this.buildUrl(endpoint);
+  
+    const requestOptions = {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        "Content-Type": "application/json",
+        ...this.buildAuthHeaders(),
+      },
     };
-    
-    // Verify Authorization header format
-    if (!headers.Authorization || !headers.Authorization.startsWith('Bearer ')) {
-      Logger.error('Authorization header is missing or incorrectly formatted', { 
-        hasAuth: !!headers.Authorization,
-        format: headers.Authorization 
-      });
-      throw new Error('Authorization header must be in format: "Bearer $token"');
-    }
-    
-    Logger.info(`Making ${method.toUpperCase()} request with Authorization header`, {
-      endpoint,
-      hasToken: !!this.token,
-      tokenLength: this.token?.length || 0,
-    });
-    
+  
     try {
-      response = await (this.apiContext as any)[method](endpoint, {
-        ...options,
-        headers,
-      });
-    } catch (err) {
-      throw new Error(`Request failed: ${err}`);
-    }
-
-    // Track performance if enabled
-    if (this.enablePerformanceTracking) {
-      const duration = Date.now() - startTime;
-      const status = response.status();
-      performanceTracker.record(endpoint, method.toUpperCase(), duration, status);
-      Logger.apiRequest(method.toUpperCase(), endpoint, status, duration);
-    }
-
-    if (!allowRefresh) {
-      return response;
-    }
-
-    if (response.status() === 401 && this.refreshToken) {
-      Logger.warn("🔁 Token expired, attempting refresh...");
-      try {
-        await this.refreshAccessToken();
-      } catch (err) {
-        Logger.error("Token refresh failed", { error: err instanceof Error ? err.message : String(err) });
+      const response = await (this.apiContext as any)[method](url, requestOptions);
+  
+      if (!allowRefresh || response.status() !== 401) {
         return response;
       }
-
-      return this.handleAuth(method, endpoint, options, false);
-    }
-
-    return response;
-  }
-
-  async loginWithPhone(phone: string): Promise<void> {
-    const signInEndpoint = config.endpoints.signin;
-    
-    if (!phone || phone.trim() === '') {
-      throw new Error('Phone number is required for signin but was empty or undefined');
-    }
-    
-    Logger.info(`Attempting phone signin with phone: ${phone.substring(0, 4)}***`);
-    
-    const payload = { phoneNumber: phone };
-    const fullUrl = `${this.baseURL}${signInEndpoint}`;
-    Logger.info(`Signin request: POST ${fullUrl}`, { payload });
-    
-    // Use Node.js https module directly since Playwright's APIRequestContext gets 403
-    // This matches the working curl/Postman requests
-    const body = await this.makeDirectHttpRequest(fullUrl, payload);
   
-    if (!body.data?.accessToken) {
-      Logger.error('Phone signin succeeded but no access token in response', { response: body });
-      throw new Error('Phone signin succeeded but response missing accessToken');
+      console.warn("Token expired, refreshing...");
+  
+      await this.refreshAccessToken();
+  
+      // retry request ONCE
+      return await (this.apiContext as any)[method](url, requestOptions);
+  
+    } catch (err: any) {
+      throw new Error(`Request failed: ${err}`);
     }
+  }  
+
+  async loginWithEmailPassword(email: string, password: string): Promise<void> {
+    const signInEndpoint = process.env.API_SIGNIN_URL!;
+    const response = await this.apiContext.post(signInEndpoint, {
+      data: { email, password },
+      headers: { "Content-Type": "application/json" },
+    });
+  
+    if (!response.ok()) {
+      throw new Error(`Login failed: ${response.status()} - ${await response.text()}`);
+    }
+  
+    const body = await response.json();
   
     this.token = body.data.accessToken;
     this.refreshToken = body.data.refreshToken;
   
-    Logger.info("Logged in successfully via phone and tokens stored", {
-      tokenLength: this.token?.length || 0,
-      hasRefreshToken: !!this.refreshToken,
-    });
-    
-    // Immediately refresh the token using Playwright to get a fresh access token
-    if (this.refreshToken) {
-      Logger.info("Refreshing token immediately after signin using Playwright...");
-      try {
-        await this.refreshAccessToken();
-        Logger.info("Token refreshed successfully after signin via Playwright");
-      } catch (error) {
-        Logger.warn("Failed to refresh token after signin, using original token", {
-          error: error instanceof Error ? error.message : String(error)
-        });
-        // Continue with original token if refresh fails
-      }
-    }
-  }
-
-  /**
-   * Makes a direct HTTP request using Node.js https module
-   * This bypasses Playwright's APIRequestContext which gets blocked by the API
-   */
-  private async makeDirectHttpRequest(url: string, payload: Record<string, unknown>): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const urlObj = new URL(url);
-      const payloadString = JSON.stringify(payload);
-      
-      const options = {
-        hostname: urlObj.hostname,
-        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
-        path: urlObj.pathname,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Content-Length': Buffer.byteLength(payloadString),
-        },
-      };
-
-      const client = urlObj.protocol === 'https:' ? https : http;
-      
-      const req = client.request(options, (res) => {
-        let data = '';
-        
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        
-        res.on('end', () => {
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              const json = JSON.parse(data);
-              resolve(json);
-            } catch (error) {
-              reject(new Error(`Failed to parse response: ${error}`));
-            }
-          } else {
-            const errorText = data || `HTTP ${res.statusCode}`;
-            Logger.error(`Phone signin failed: ${res.statusCode}`, { 
-              error: errorText, 
-              status: res.statusCode
-            });
-            reject(new Error(`Phone signin failed: ${res.statusCode} - ${errorText}`));
-          }
-        });
-      });
-
-      req.on('error', (error) => {
-        Logger.error('Phone signin request error', { error: error.message });
-        reject(new Error(`Phone signin request failed: ${error.message}`));
-      });
-
-      req.write(payloadString);
-      req.end();
-    });
+    console.log("Logged in successfully and tokens stored");
   }
   
   async refreshAccessToken(): Promise<void> {
     if (!this.refreshToken) throw new Error("No refresh token available");
 
     const cleanToken = this.refreshToken.replace(/^Bearer\s+/, "");
-    const refreshEndpoint = this.refreshURL;
 
-    Logger.info(`Refreshing token via Playwright: POST ${this.baseURL}${refreshEndpoint}`);
-
-    const response = await this.apiContext.post(refreshEndpoint, {
+    const response = await this.apiContext.post(this.refreshURL, {
       data: { refreshToken: cleanToken },
-      headers: {
-        "Content-Type": "application/json",
-        // Accept header already set in context extraHTTPHeaders (browser-like)
-      },
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok()) {
       const text = await response.text();
-      Logger.error(`Token refresh failed: ${response.status()}`, { error: text });
       throw new Error(`Refresh token failed: ${response.status()} - ${text}`);
     }
 
     const body: RefreshResponse = await response.json();
-    
-    if (!body.data?.accessToken) {
-      Logger.error('Token refresh succeeded but no access token in response', { response: body });
-      throw new Error('Token refresh succeeded but response missing accessToken');
-    }
-    
     this.token = body.data.accessToken;
-    if (body.data.refreshToken) {
-      this.refreshToken = body.data.refreshToken;
-    }
+    if (body.data.refreshToken) this.refreshToken = body.data.refreshToken;
 
-    Logger.info("Access token refreshed successfully via Playwright", {
-      tokenLength: this.token?.length || 0,
-      hasNewRefreshToken: !!body.data.refreshToken,
-    });
+    console.log("Access token refreshed successfully");
   }
 
   async get(endpoint: string, allowRefresh = true): Promise<APIResponse> {
-    return this.handleAuth("get", endpoint, {}, allowRefresh);
-  }
+  return this.handleAuth("get", endpoint, {}, allowRefresh);
+}
 
   async delete(endpoint: string, allowRefresh = true): Promise<APIResponse> {
-    return this.handleAuth("delete", endpoint, {}, allowRefresh);
-  }
+  return this.handleAuth("delete", endpoint, {}, allowRefresh);
+}
+
 
   async post(
     endpoint: string,
@@ -319,8 +198,6 @@ export class ApiClient {
     { fieldName, filePath }: { fieldName: string; filePath: string },
     allowRefresh = true
   ): Promise<APIResponse> {
-    const startTime = Date.now();
-    
     if (!this.token) throw new Error("Token is not set");
     if (!fs.existsSync(filePath))
       throw new Error(`File not found: ${filePath}`);
@@ -347,15 +224,8 @@ export class ApiClient {
       throw new Error(`Multipart request failed: ${err}`);
     }
 
-    // Track performance for multipart uploads
-    if (this.enablePerformanceTracking) {
-      const duration = Date.now() - startTime;
-      performanceTracker.record(endpoint, 'POST', response.status(), duration);
-      Logger.apiRequest('POST', endpoint, response.status(), duration);
-    }
-
     if (response.status() === 401 && allowRefresh && this.refreshToken) {
-      Logger.warn("Skipping token refresh for multipart uploads.");
+      console.warn("Skipping token refresh for multipart uploads.");
       return response;
     }
 
@@ -363,9 +233,154 @@ export class ApiClient {
   }
 
   async dispose(): Promise<void> {
-    if (this.apiContext) {
-      await this.apiContext.dispose();
-    }
+    await this.apiContext.dispose();
   }
-}
+  
+  private buildUrl(endpoint: string): string {
+    if (!endpoint) {
+      throw new Error(`Endpoint is invalid: "${endpoint}"`);
+    }
+  
+    if (endpoint.startsWith("http")) {
+      return endpoint;
+    }
+  
+    if (!this.baseURL) {
+      throw new Error("Base URL is not defined");
+    }
+  
+    return `${this.baseURL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+  }
+  
+  private buildAuthHeaders(): Record<string, string> {
+    if (!this.token) {
+      throw new Error("Token is not set");
+    }
+  
+    return {
+      Authorization: `Bearer ${this.token}`,
+    };
+  }
+  
+  public async loginWithPhone(phone: string): Promise<void> {
+    Logger.info("Attempting phone-based login...");
+  
+    const url = `${this.baseURL}${config.endpoints.signin}`;
+    const payload = { phoneNumber: phone };
+  
+    const response = await this.makeDirectHttpRequest(url, payload);
+  
+    // FIX: Access nested token
+    const accessToken = response?.data?.data?.accessToken;
+    const refreshToken = response?.data?.data?.refreshToken;
+  
+    if (!accessToken) {
+      Logger.error("Phone signin failed, no accessToken returned", { body: response });
+      throw new Error("Phone signin succeeded but response missing accessToken");
+    }
+  
+    this.token = accessToken;
+    this.refreshToken = refreshToken;
+  
+    Logger.info("Phone signin success, token stored.");
+    console.log("BASE_URL:", this.baseURL);
+    console.log("FULL:", url);
 
+  }
+  
+  
+  private async makeDirectHttpRequest(
+    url: string,
+    payload?: Record<string, unknown>,
+    headers: Record<string, string> = {}
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      try {
+        const urlObj = new URL(url.trim());
+        const isHttps = urlObj.protocol === "https:";
+  
+        const dataString = payload ? JSON.stringify(payload) : "";
+  
+        // Final headers MUST be string values only
+        const finalHeaders: Record<string, string> = {
+          Accept: "application/json",
+          ...headers,
+        };
+  
+        if (payload) {
+          finalHeaders["Content-Type"] = "application/json";
+          finalHeaders["Content-Length"] = Buffer.byteLength(dataString).toString();
+        }
+  
+        const options: any = {
+          hostname: urlObj.hostname,
+          port: urlObj.port || (isHttps ? 443 : 80),
+          path: urlObj.pathname + urlObj.search,
+          method: payload ? "POST" : "GET",
+          headers: finalHeaders,
+        };
+  
+        const client = isHttps ? require("https") : require("http");
+  
+        const req = client.request(options, (res: any) => {
+          let raw = "";
+  
+          res.on("data", (chunk: any) => {
+            raw += chunk;
+          });
+  
+          res.on("end", () => {
+            let parsed;
+  
+            // Try parse JSON
+            try {
+              parsed = raw ? JSON.parse(raw) : {};
+            } catch (err: any) {
+              Logger.error("Failed to parse JSON response", {
+                error: err.message,
+                raw,
+              });
+              return reject(
+                new Error(`Failed to parse JSON: ${err.message}, Response: ${raw}`)
+              );
+            }
+  
+            // Log HTTP response
+            Logger.info(`HTTP ${options.method} ${url} → ${res.statusCode}`, {
+              request: payload,
+              response: parsed,
+            });
+  
+            // Resolve ANY response (success or not)
+            resolve({
+              status: res.statusCode,
+              data: parsed,
+            });
+          });
+        });
+  
+        req.on("error", (error: any) => {
+          Logger.error("Raw HTTP request error", {
+            error: error.message,
+            url,
+          });
+          reject(new Error(error.message));
+        });
+  
+        if (payload) {
+          Logger.info(`HTTP ${options.method} ${url}`, {
+            headers: finalHeaders,
+            payload,
+          });
+  
+          req.write(dataString);
+        }
+  
+        req.end();
+      } catch (err: any) {
+        reject(new Error(`makeDirectHttpRequest failed: ${err.message}`));
+      }
+    });
+  }  
+  
+}

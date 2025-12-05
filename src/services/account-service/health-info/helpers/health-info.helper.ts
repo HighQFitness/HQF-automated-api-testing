@@ -1,35 +1,37 @@
 import { config } from '@config/appConfig';
 import { ApiClient } from '@shared/client/api-client';
-import { Logger } from '@shared/utils/logger';
-import { HealthInfoConfig } from '../config/health-info.config';
-import { HealthInfoFactory } from '../factories/health-info.factory';
+import { HttpStatus, SuccessStatusCodes } from '@shared/constants/http-status-codes';
 
-/**
- * Health Info Helper
- * 
- * Helper functions for Health Info domain setup and teardown.
- */
+export async function verifyAndCreateHealthInfo(apiClient: ApiClient): Promise<void> {
+  const endpoint = config.endpoints.healthInfo;
 
-/**
- * Verifies and creates health info if needed
- */
-export const verifyAndCreateHealthInfo = async (): Promise<void> => {
-  const api = new ApiClient(config.api.baseUrl);
-  
-  try {
-    await api.init();
-    const payload = HealthInfoFactory.valid(config.health.biologicalSex);
-    const response = await api.patch(HealthInfoConfig.endpoints.healthInfo, payload, true);
-    
-    if (!response.ok()) {
-      const errorText = await response.text();
-      Logger.warn(`Health info patch returned ${response.status()}: ${errorText}`);
-    }
-  } catch (error) {
-    Logger.error('Error in verifyAndCreateHealthInfo', { error: error instanceof Error ? error.message : String(error) });
-    throw error;
-  } finally {
-    await api.dispose();
+  if (!endpoint) {
+    throw new Error(`HealthInfo endpoint missing in config`);
   }
-};
 
+  // Try fetch
+  const getResponse = await apiClient.get(endpoint);
+  const status = getResponse.status();
+
+  if (status === HttpStatus.OK) {
+    return; // exists
+  }
+
+  // Create minimal entry
+  const payload = {
+    height: { value: 170, unit: "cm" },
+    weight: { value: 70, unit: "kg" },
+    birthDay: "1990-01-01",
+    gender: "male",
+    biologicalSex: "male",
+  };
+
+  const createResponse = await apiClient.patch(endpoint, payload);
+  const createStatus = createResponse.status();
+
+  if (!SuccessStatusCodes.includes(createStatus as any)) {
+    throw new Error(
+      `Failed to create health info: status=${createStatus}, body=${await createResponse.text()}`
+    );
+  }
+}

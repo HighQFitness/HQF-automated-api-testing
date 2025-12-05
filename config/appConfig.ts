@@ -244,4 +244,3 @@ export function getUsernameEndpoint(deviceUserId: string | number): string {
     device_user_id: deviceUserId,
   });
 }
-
