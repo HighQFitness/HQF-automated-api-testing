@@ -11,11 +11,6 @@ import { AccountConfig, validateAccountResponse } from './index';
 import { AccountResponse } from './types/account.types';
 
 
-console.log("=== ACCOUNT SPEC CONFIG ===");
-console.log("HealthInfo endpoint:", config.endpoints.healthInfo);
-console.log("SportsInfo endpoint:", config.endpoints.sportsInfo);
-console.log("=================================");
-
 const accountEndpoint = AccountConfig.endpoints.account;
 const accountAvatarEndpoint = AccountConfig.endpoints.accountAvatar;
 const accountPhotoEndpoint = AccountConfig.endpoints.accountPhoto;
@@ -150,7 +145,7 @@ test.describe('Account service - Change and verify account phone number', () => 
     
     const response = await apiClient.patch(phoneChangeEndpoint, { phoneNumber: currentPhone }, true);
     
-    await validateErrorResponseWithId(response, HttpStatus.BAD_REQUEST, 'ACCOUNT-400-2');
+    await validateErrorResponseWithId(response, HttpStatus.BAD_REQUEST, 'ACCOUNT-400-1');
   });
 
   test('PATCH /account/phone - Should return 401 Unauthorized with invalid token', async ({ apiClient }) => {

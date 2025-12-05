@@ -345,11 +345,11 @@ export class ApiClient {
               );
             }
   
-            // Log HTTP response
-            Logger.info(`HTTP ${options.method} ${url} → ${res.statusCode}`, {
-              request: payload,
-              response: parsed,
-            });
+            // // Log HTTP response
+            // Logger.info(`HTTP ${options.method} ${url} → ${res.statusCode}`, {
+            //   request: payload,
+            //   response: parsed,
+            // });
   
             // Resolve ANY response (success or not)
             resolve({
